@@ -208,9 +208,10 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Description */}
-            <p className="text-text-light leading-relaxed mb-6">
-              {product.description}
-            </p>
+            <div
+              className="text-text-light leading-relaxed mb-6 prose prose-sm max-w-none line-clamp-6"
+              dangerouslySetInnerHTML={{ __html: product.description }}
+            />
 
             {/* Stock */}
             <div className="flex items-center gap-2 mb-6">
@@ -333,7 +334,7 @@ export default function ProductDetailPage() {
           >
             {activeTab === "description" && (
               <div className="prose prose-sm max-w-none text-text-light leading-relaxed">
-                <p>{product.description}</p>
+                <div dangerouslySetInnerHTML={{ __html: product.description }} />
                 <p className="mt-4">
                   At Intact Ghana, we ensure all our products are 100% authentic and come with 
                   manufacturer warranty. Enjoy free delivery on orders over GH₵3,000 and our 

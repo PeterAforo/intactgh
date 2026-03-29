@@ -32,6 +32,7 @@ export async function GET(
       categoryId: product.categoryId,
       id: { not: product.id },
       status: "active",
+      price: { gt: 0 },
     },
     include: {
       images: { orderBy: { order: "asc" }, take: 1 },

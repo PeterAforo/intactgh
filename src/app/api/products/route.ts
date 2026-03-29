@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "12");
 
-  const where: Prisma.ProductWhereInput = { status: "active" };
+  const where: Prisma.ProductWhereInput = { status: "active", price: { gt: 0 } };
 
   if (category) {
     const cat = await prisma.category.findUnique({
@@ -43,9 +43,10 @@ export async function GET(request: NextRequest) {
     where.isNew = true;
   }
   if (minPrice || maxPrice) {
-    where.price = {};
-    if (minPrice) (where.price as Prisma.FloatFilter).gte = parseFloat(minPrice);
-    if (maxPrice) (where.price as Prisma.FloatFilter).lte = parseFloat(maxPrice);
+    const priceFilter: Prisma.FloatFilter = { gt: 0 };
+    if (minPrice) priceFilter.gte = parseFloat(minPrice);
+    if (maxPrice) priceFilter.lte = parseFloat(maxPrice);
+    where.price = priceFilter;
   }
   if (search) {
     where.OR = [
