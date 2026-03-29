@@ -15,7 +15,9 @@ import { Input } from "@/components/ui/input";
 import { useChatbot } from "@/hooks/useChatbot";
 import ChatMessage from "./ChatMessage";
 import TypingIndicator from "./TypingIndicator";
-import { CHATBOT_CONFIG, type ProductPreview } from "@/lib/chatbot-config";
+import { CHATBOT_CONFIG } from "@/lib/chatbot-config";
+import type { ProductDetail } from "@/lib/chatbot/types";
+import { chatAnalytics } from "@/lib/chatbot/analytics";
 import { useCartStore } from "@/store/cart-store";
 
 function playNotificationSound() {
@@ -52,7 +54,7 @@ export default function ChatBot() {
   const { messages, isLoading, sendMessage, resetChat, confirmAddToCart } = useChatbot();
   const { addItem, getItemCount } = useCartStore();
 
-  const handleAddToCart = (product: ProductPreview) => {
+  const handleAddToCart = (product: ProductDetail) => {
     addItem({
       id: product.id,
       name: product.name,
@@ -63,6 +65,7 @@ export default function ChatBot() {
       stock: product.stock,
     });
     confirmAddToCart(product.name, getItemCount() + 1);
+    chatAnalytics.addToCartClicked(product.id, product.name, product.price);
   };
 
   // Auto-scroll to bottom on new messages
@@ -120,9 +123,17 @@ export default function ChatBot() {
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen]);
 
+  const handleToggleChat = () => {
+    const next = !isOpen;
+    setIsOpen(next);
+    if (next) chatAnalytics.chatOpened();
+    else chatAnalytics.chatClosed();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
+    chatAnalytics.messageSent("user_message");
     sendMessage(input.trim());
     setInput("");
   };
@@ -184,7 +195,7 @@ export default function ChatBot() {
         </AnimatePresence>
 
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={handleToggleChat}
           aria-label={isOpen ? "Close chat" : "Open Intact AI chat assistant"}
           aria-expanded={isOpen}
           className={`relative w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 ${

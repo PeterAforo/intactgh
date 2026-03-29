@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { ChatbotResponse, ProductPreview } from "@/lib/chatbot-config";
+import type { ChatApiResponse, ProductDetail, ComparisonData, AccessoryGroup } from "@/lib/chatbot/types";
+import type { ChatIntent, ChatMode, SessionContext } from "@/lib/chatbot/types";
+import { emptySession } from "@/lib/chatbot/session";
 import { CHATBOT_CONFIG } from "@/lib/chatbot-config";
 
 export interface ChatMessage {
@@ -10,11 +12,18 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   quickReplies?: string[];
-  action?: ChatbotResponse["action"];
+  action?: ChatApiResponse["action"];
   action_payload?: Record<string, string>;
-  products?: ProductPreview[];
+  products?: ProductDetail[];
+  comparison?: ComparisonData;
+  accessories?: AccessoryGroup;
+  intent?: ChatIntent;
+  mode?: ChatMode;
   isError?: boolean;
 }
+
+// Re-export for convenience
+export type { ProductDetail as ProductPreview } from "@/lib/chatbot/types";
 
 export type LeadStep = "idle" | "name" | "email" | "message" | "done";
 export type CheckoutStep = "idle" | "name" | "phone" | "done";
@@ -56,6 +65,7 @@ export function useChatbot() {
   const [leadState, setLeadState] = useState<LeadState>(INITIAL_LEAD);
   const [checkoutState, setCheckoutState] = useState<CheckoutState>(INITIAL_CHECKOUT);
   const [pendingNewsletterEmail, setPendingNewsletterEmail] = useState(false);
+  const [session, setSession] = useState<SessionContext>(emptySession());
   const abortRef = useRef<AbortController | null>(null);
 
   const addMessage = useCallback((msg: Omit<ChatMessage, "id" | "timestamp">) => {
@@ -79,14 +89,17 @@ export function useChatbot() {
   );
 
   const callChatAPI = useCallback(
-    async (history: { role: string; content: string }[]): Promise<ChatbotResponse> => {
+    async (
+      history: { role: string; content: string }[],
+      session?: SessionContext
+    ): Promise<ChatApiResponse> => {
       abortRef.current?.abort();
       abortRef.current = new AbortController();
 
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, session }),
         signal: abortRef.current.signal,
       });
 
@@ -314,7 +327,10 @@ export function useChatbot() {
 
       try {
         const history = buildHistory([...messages, userMsg]);
-        const response = await callChatAPI(history);
+        const response = await callChatAPI(history, session);
+
+        // Update session from response
+        if (response.session) setSession(response.session);
 
         // Handle action side-effects
         if (response.action === "capture_lead") {
@@ -347,6 +363,10 @@ export function useChatbot() {
           action: response.action,
           action_payload: response.action_payload,
           products: response.products,
+          comparison: response.comparison,
+          accessories: response.accessories,
+          intent: response.intent,
+          mode: response.mode,
         });
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -391,6 +411,7 @@ export function useChatbot() {
     setLeadState(INITIAL_LEAD);
     setCheckoutState(INITIAL_CHECKOUT);
     setPendingNewsletterEmail(false);
+    setSession(emptySession());
     setIsLoading(false);
   }, []);
 

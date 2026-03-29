@@ -355,23 +355,48 @@ function DescriptionGeneratorTool() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Chatbot Settings sub-component
 // ─────────────────────────────────────────────────────────────────────────────
+function SettingToggle({ label, desc, value, onChange }: { label: string; desc: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
+      <div>
+        <p className="text-sm font-medium text-text">{label}</p>
+        <p className="text-xs text-text-muted">{desc}</p>
+      </div>
+      <button onClick={() => onChange(!value)} className="flex items-center gap-2 shrink-0">
+        {value ? <ToggleRight className="w-9 h-9 text-success" /> : <ToggleLeft className="w-9 h-9 text-border" />}
+      </button>
+    </div>
+  );
+}
+
 function ChatbotSettingsTool() {
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(true);
   const [botName, setBotName] = useState("Kwaku");
   const [welcomeMessage, setWelcomeMessage] = useState(
-    "Hi there! 👋 I'm **Kwaku**, your personal shopping assistant for Intact Ghana. I can help you find products, track orders, answer questions, and more. How can I help you today?"
+    "Hi there! 👋 I'm **Kwaku**, your personal shopping assistant for Intact Ghana. I can help you find products, compare options, track orders, and more. How can I help you today?"
   );
   const [personality, setPersonality] = useState(
     "Friendly, helpful, knowledgeable about electronics. Stays on-topic for Intact Ghana products. Uses simple language and guides customers to the right products."
   );
+  const [fallbackMessage, setFallbackMessage] = useState(
+    "I'm not sure I can help with that. You can browse our shop, or contact us at +233 543 645 126."
+  );
+  const [escalationMessage, setEscalationMessage] = useState(
+    "I'll connect you with our support team. Call **+233 543 645 126** or email **support@intactghana.com** — Mon–Sat, 9am–6pm."
+  );
+  const [maxRecommendations, setMaxRecommendations] = useState(4);
+  const [enableCrossSell, setEnableCrossSell] = useState(true);
+  const [enableComparison, setEnableComparison] = useState(true);
+  const [enableOrderSupport, setEnableOrderSupport] = useState(true);
   const [quickReplies, setQuickReplies] = useState([
-    "🛍️ Browse products",
-    "📦 Track my order",
-    "💳 Payment options",
-    "🔄 Return policy",
+    "🔥 Best deals today",
+    "💻 Laptops under GH₵3000",
+    "📱 Latest smartphones",
+    "🛒 Help me choose",
   ]);
   const [newReply, setNewReply] = useState("");
+  const [activeTab, setActiveTab] = useState<"general" | "behavior" | "advanced">("general");
 
   const loadSettings = useCallback(async () => {
     try {
@@ -383,6 +408,12 @@ function ChatbotSettingsTool() {
         if (s.chatbot_name) setBotName(s.chatbot_name);
         if (s.chatbot_welcome) setWelcomeMessage(s.chatbot_welcome);
         if (s.chatbot_personality) setPersonality(s.chatbot_personality);
+        if (s.chatbot_fallback) setFallbackMessage(s.chatbot_fallback);
+        if (s.chatbot_escalation) setEscalationMessage(s.chatbot_escalation);
+        if (s.chatbot_max_recs) setMaxRecommendations(parseInt(s.chatbot_max_recs) || 4);
+        if (s.chatbot_cross_sell !== undefined) setEnableCrossSell(s.chatbot_cross_sell !== "false");
+        if (s.chatbot_comparison !== undefined) setEnableComparison(s.chatbot_comparison !== "false");
+        if (s.chatbot_order_support !== undefined) setEnableOrderSupport(s.chatbot_order_support !== "false");
         if (s.chatbot_quick_replies) {
           try { setQuickReplies(JSON.parse(s.chatbot_quick_replies)); } catch { /* keep default */ }
         }
@@ -403,6 +434,12 @@ function ChatbotSettingsTool() {
           chatbot_name: botName,
           chatbot_welcome: welcomeMessage,
           chatbot_personality: personality,
+          chatbot_fallback: fallbackMessage,
+          chatbot_escalation: escalationMessage,
+          chatbot_max_recs: String(maxRecommendations),
+          chatbot_cross_sell: String(enableCrossSell),
+          chatbot_comparison: String(enableComparison),
+          chatbot_order_support: String(enableOrderSupport),
           chatbot_quick_replies: JSON.stringify(quickReplies),
         }),
       });
@@ -424,6 +461,12 @@ function ChatbotSettingsTool() {
 
   const removeReply = (i: number) => setQuickReplies(quickReplies.filter((_, idx) => idx !== i));
 
+  const tabs = [
+    { id: "general" as const, label: "General" },
+    { id: "behavior" as const, label: "Behavior" },
+    { id: "advanced" as const, label: "Advanced" },
+  ];
+
   return (
     <div className="bg-white rounded-2xl border border-border p-6">
       <div className="flex items-center justify-between mb-6">
@@ -441,105 +484,166 @@ function ChatbotSettingsTool() {
         </Button>
       </div>
 
-      <div className="space-y-6">
-        {/* Enable/Disable */}
-        <div className="flex items-center justify-between p-4 bg-surface rounded-xl">
-          <div>
-            <p className="text-sm font-semibold text-text">Chatbot Enabled</p>
-            <p className="text-xs text-text-muted">Show the AI chat widget on the storefront</p>
-          </div>
-          <button onClick={() => setEnabled(!enabled)} className="flex items-center gap-2">
-            {enabled
-              ? <ToggleRight className="w-10 h-10 text-success" />
-              : <ToggleLeft className="w-10 h-10 text-border" />}
-            <span className={`text-sm font-medium ${enabled ? "text-success" : "text-text-muted"}`}>
-              {enabled ? "ON" : "OFF"}
-            </span>
+      {/* Tab Navigation */}
+      <div className="flex gap-1 bg-surface p-1 rounded-xl mb-6">
+        {tabs.map((t) => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)}
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${activeTab === t.id ? "bg-white text-text shadow-sm" : "text-text-muted hover:text-text"}`}>
+            {t.label}
           </button>
-        </div>
+        ))}
+      </div>
 
-        {/* Name */}
-        <div>
-          <label className="text-sm font-medium text-text block mb-1.5">Bot Name</label>
-          <Input value={botName} onChange={(e) => setBotName(e.target.value)} placeholder="Kwaku" className="rounded-lg max-w-xs" />
-          <p className="text-xs text-text-muted mt-1">The name customers see in the chat widget</p>
-        </div>
+      {/* General Tab */}
+      {activeTab === "general" && (
+        <div className="space-y-5">
+          <SettingToggle label="Chatbot Enabled" desc="Show the AI chat widget on the storefront" value={enabled} onChange={setEnabled} />
 
-        {/* Welcome Message */}
-        <div>
-          <label className="text-sm font-medium text-text block mb-1.5">Welcome Message</label>
-          <textarea
-            value={welcomeMessage}
-            onChange={(e) => setWelcomeMessage(e.target.value)}
-            rows={3}
-            className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent resize-none"
-            placeholder="Hi there! I'm your shopping assistant..."
-          />
-          <p className="text-xs text-text-muted mt-1">Supports **bold** markdown. Shown when chat opens.</p>
-        </div>
-
-        {/* Personality */}
-        <div>
-          <label className="text-sm font-medium text-text block mb-1.5">Personality / Behavior</label>
-          <textarea
-            value={personality}
-            onChange={(e) => setPersonality(e.target.value)}
-            rows={3}
-            className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent resize-none"
-            placeholder="Friendly and helpful, focused on electronics..."
-          />
-          <p className="text-xs text-text-muted mt-1">Describes the bot&apos;s personality and behavior guidelines to the AI</p>
-        </div>
-
-        {/* Quick Replies */}
-        <div>
-          <label className="text-sm font-medium text-text block mb-3">Quick Reply Buttons</label>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {quickReplies.map((r, i) => (
-              <div key={i} className="flex items-center gap-1 bg-surface border border-border rounded-full px-3 py-1.5">
-                <span className="text-sm text-text">{r}</span>
-                <button onClick={() => removeReply(i)} className="ml-1 text-text-muted hover:text-red-500 transition-colors">
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">Bot Name</label>
+            <Input value={botName} onChange={(e) => setBotName(e.target.value)} placeholder="Kwaku" className="rounded-lg max-w-xs" />
+            <p className="text-xs text-text-muted mt-1">The name customers see in the chat widget</p>
           </div>
-          <div className="flex gap-2">
-            <Input
-              value={newReply}
-              onChange={(e) => setNewReply(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addReply()}
-              placeholder="e.g. 🔥 Best deals"
-              className="rounded-lg"
-            />
-            <Button onClick={addReply} variant="outline" className="rounded-lg shrink-0">
-              <Plus className="w-4 h-4 mr-1" />Add
-            </Button>
-          </div>
-          <p className="text-xs text-text-muted mt-1">Shown as clickable buttons when chat opens. Max 4 recommended. Supports emojis.</p>
-        </div>
 
-        {/* Preview */}
-        <div className="bg-surface rounded-xl p-4">
-          <p className="text-xs font-semibold text-text mb-3">Preview</p>
-          <div className="bg-white rounded-xl border border-border p-4 max-w-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm font-bold text-text">{botName || "Bot"}</span>
-            </div>
-            <div className="bg-surface rounded-lg p-3 text-xs text-text-light mb-3">
-              {welcomeMessage.replace(/\*\*/g, "")}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {quickReplies.slice(0, 4).map((r, i) => (
-                <span key={i} className="bg-accent/10 text-accent text-[10px] px-2 py-1 rounded-full">{r}</span>
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">Welcome Message</label>
+            <textarea value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} rows={3}
+              className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent resize-none"
+              placeholder="Hi there! I'm your shopping assistant..." />
+            <p className="text-xs text-text-muted mt-1">Supports **bold** markdown. Shown when chat opens.</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-text block mb-3">Quick Reply Buttons</label>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {quickReplies.map((r, i) => (
+                <div key={i} className="flex items-center gap-1 bg-surface border border-border rounded-full px-3 py-1.5">
+                  <span className="text-sm text-text">{r}</span>
+                  <button onClick={() => removeReply(i)} className="ml-1 text-text-muted hover:text-red-500 transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               ))}
             </div>
+            <div className="flex gap-2">
+              <Input value={newReply} onChange={(e) => setNewReply(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addReply()} placeholder="e.g. 🔥 Best deals" className="rounded-lg" />
+              <Button onClick={addReply} variant="outline" className="rounded-lg shrink-0">
+                <Plus className="w-4 h-4 mr-1" />Add
+              </Button>
+            </div>
+            <p className="text-xs text-text-muted mt-1">Max 4 recommended. Supports emojis.</p>
+          </div>
+
+          {/* Preview */}
+          <div className="bg-surface rounded-xl p-4">
+            <p className="text-xs font-semibold text-text mb-3">Widget Preview</p>
+            <div className="bg-white rounded-xl border border-border p-4 max-w-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm font-bold text-text">{botName || "Bot"}</span>
+                <span className="ml-auto flex items-center gap-1 text-xs text-success">
+                  <span className="w-1.5 h-1.5 bg-success rounded-full" />Online
+                </span>
+              </div>
+              <div className="bg-surface rounded-lg p-3 text-xs text-text-light mb-3">
+                {welcomeMessage.replace(/\*\*/g, "")}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {quickReplies.slice(0, 4).map((r, i) => (
+                  <span key={i} className="bg-accent/10 text-accent text-[10px] px-2 py-1 rounded-full border border-accent/20">{r}</span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Behavior Tab */}
+      {activeTab === "behavior" && (
+        <div className="space-y-5">
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">AI Personality / Behavior Prompt</label>
+            <textarea value={personality} onChange={(e) => setPersonality(e.target.value)} rows={4}
+              className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent resize-none"
+              placeholder="Friendly and helpful, focused on electronics..." />
+            <p className="text-xs text-text-muted mt-1">Injected into the AI system prompt to shape personality, tone, and behavior.</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">Fallback Message</label>
+            <textarea value={fallbackMessage} onChange={(e) => setFallbackMessage(e.target.value)} rows={2}
+              className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent resize-none"
+              placeholder="When the bot can't help..." />
+            <p className="text-xs text-text-muted mt-1">Shown when the chatbot can&apos;t understand or answer a request.</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">Escalation / Human Handoff Message</label>
+            <textarea value={escalationMessage} onChange={(e) => setEscalationMessage(e.target.value)} rows={2}
+              className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent resize-none"
+              placeholder="Contact us at..." />
+            <p className="text-xs text-text-muted mt-1">Shown when the user asks for a human or when escalation is triggered.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Advanced Tab */}
+      {activeTab === "advanced" && (
+        <div className="space-y-5">
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">Max Recommendations Per Response</label>
+            <div className="flex items-center gap-3">
+              <input type="range" min={1} max={6} value={maxRecommendations}
+                onChange={(e) => setMaxRecommendations(parseInt(e.target.value))}
+                className="flex-1 accent-accent" />
+              <span className="text-sm font-bold text-text w-6 text-center">{maxRecommendations}</span>
+            </div>
+            <p className="text-xs text-text-muted mt-1">Controls how many products the bot shows at once (1–6).</p>
+          </div>
+
+          <div className="bg-surface rounded-xl p-4">
+            <p className="text-sm font-semibold text-text mb-3">Feature Toggles</p>
+            <div className="divide-y divide-border">
+              <SettingToggle
+                label="Product Recommendations"
+                desc="Allow the bot to recommend products based on budget and preferences"
+                value={enableCrossSell}
+                onChange={setEnableCrossSell}
+              />
+              <SettingToggle
+                label="Cross-sell Accessories"
+                desc="Show matching accessories after product recommendations"
+                value={enableCrossSell}
+                onChange={setEnableCrossSell}
+              />
+              <SettingToggle
+                label="Product Comparison"
+                desc="Allow users to compare two products side-by-side"
+                value={enableComparison}
+                onChange={setEnableComparison}
+              />
+              <SettingToggle
+                label="Order & Support Guidance"
+                desc="Allow chatbot to answer delivery, payment, and returns questions"
+                value={enableOrderSupport}
+                onChange={setEnableOrderSupport}
+              />
+            </div>
+          </div>
+
+          <div className="bg-accent/5 rounded-xl p-4 text-xs text-text-light space-y-1">
+            <p className="font-semibold text-text mb-1">Architecture Notes</p>
+            <p>• Settings are stored in the <code className="bg-surface px-1 rounded">SiteSetting</code> database table</p>
+            <p>• Settings cache refreshes every 60 seconds server-side</p>
+            <p>• Session memory is stateless (passed in each request, no Redis needed)</p>
+            <p>• Intent classification runs both client-side and via GPT-4o</p>
+            <p>• Comparison builds from real product data — no hallucinated specs</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
