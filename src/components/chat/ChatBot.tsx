@@ -18,14 +18,37 @@ import TypingIndicator from "./TypingIndicator";
 import { CHATBOT_CONFIG, type ProductPreview } from "@/lib/chatbot-config";
 import { useCartStore } from "@/store/cart-store";
 
+function playNotificationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    [[880, 0], [1100, 0.12], [1320, 0.24]].forEach(([freq, when]) => {
+      const osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      osc.start(ctx.currentTime + when);
+      osc.stop(ctx.currentTime + when + 0.3);
+    });
+    setTimeout(() => ctx.close(), 800);
+  } catch { /* ignore */ }
+}
+
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [showBadge, setShowBadge] = useState(true);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [idlePopup, setIdlePopup] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleShownRef = useRef(false);
   const { messages, isLoading, sendMessage, resetChat, confirmAddToCart } = useChatbot();
   const { addItem, getItemCount } = useCartStore();
 
@@ -55,12 +78,37 @@ export default function ChatBot() {
     setShowScrollBtn(distFromBottom > 120);
   };
 
-  // Focus input when chat opens
+  // Focus input when chat opens; dismiss idle popup on open
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 200);
       setShowBadge(false);
+      setIdlePopup(false);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     }
+  }, [isOpen]);
+
+  // Idle popup: fires after 5s of no user activity while chat is closed
+  useEffect(() => {
+    const resetTimer = () => {
+      if (isOpen) return;
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => {
+        if (!isOpen && !idleShownRef.current) {
+          idleShownRef.current = true;
+          setIdlePopup(true);
+          playNotificationSound();
+        }
+      }, 5000);
+    };
+
+    const events = ["mousemove", "keydown", "touchstart", "scroll", "click"];
+    events.forEach((e) => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, resetTimer));
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
   }, [isOpen]);
 
   // Keyboard: close on Escape
@@ -96,18 +144,41 @@ export default function ChatBot() {
         transition={{ delay: 1.2, type: "spring", stiffness: 260, damping: 20 }}
         className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
       >
-        {/* Greeting tooltip */}
+        {/* Greeting tooltip (initial) */}
         <AnimatePresence>
-          {showBadge && !isOpen && (
+          {showBadge && !isOpen && !idlePopup && (
             <motion.div
               initial={{ opacity: 0, y: 8, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
-              className="bg-white border border-gray-200 shadow-lg rounded-2xl rounded-br-sm px-4 py-2.5 text-sm text-gray-700 max-w-[220px] cursor-pointer"
+              className="relative bg-white border border-gray-200 shadow-lg rounded-2xl rounded-br-sm px-4 py-2.5 text-sm text-gray-700 max-w-[220px] cursor-pointer"
               onClick={() => setIsOpen(true)}
             >
               👋 Hi! Need help finding something?
               <span className="absolute -bottom-1.5 right-4 w-3 h-3 bg-white border-r border-b border-gray-200 rotate-45" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Idle popup */}
+        <AnimatePresence>
+          {idlePopup && !isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.88 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.88 }}
+              transition={{ type: "spring", stiffness: 340, damping: 24 }}
+              className="relative bg-[#0052cc] text-white shadow-xl rounded-2xl rounded-br-sm px-4 py-3 text-sm max-w-[230px] cursor-pointer"
+              onClick={() => { setIdlePopup(false); setIsOpen(true); }}
+            >
+              <p className="font-semibold text-[13px]">👋 Still there?</p>
+              <p className="text-white/80 text-[12px] mt-0.5">I can help you find products, check prices or track an order!</p>
+              <button
+                onClick={(e) => { e.stopPropagation(); setIdlePopup(false); }}
+                className="absolute top-1.5 right-2 text-white/60 hover:text-white text-base leading-none"
+                aria-label="Dismiss"
+              >✕</button>
+              <span className="absolute -bottom-1.5 right-4 w-3 h-3 bg-[#0052cc] border-r border-b border-[#0052cc] rotate-45" />
             </motion.div>
           )}
         </AnimatePresence>

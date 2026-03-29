@@ -18,6 +18,11 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ilike(field: string, word: string): any {
+  return { [field]: { contains: word, mode: "insensitive" } };
+}
+
 async function searchProducts(
   query: string,
   minPrice?: number,
@@ -27,13 +32,22 @@ async function searchProducts(
   const where: Prisma.ProductWhereInput = { status: "active" };
 
   if (query) {
-    where.OR = [
-      { name: { contains: query } },
-      { description: { contains: query } },
-      { tags: { contains: query } },
-      { category: { name: { contains: query } } },
-      { brand: { name: { contains: query } } },
-    ];
+    // Split into individual keywords; skip stop-words under 2 chars
+    const stopWords = new Set(["a", "an", "the", "and", "or", "in", "on", "at", "to", "i", "is", "it", "with", "for", "of"]);
+    const words = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 1 && !stopWords.has(w));
+
+    const wordConditions: Prisma.ProductWhereInput[] = words.flatMap((w) => [
+      ilike("name", w),
+      ilike("description", w),
+      ilike("tags", w),
+      { category: ilike("name", w) },
+      { brand: ilike("name", w) },
+    ]);
+
+    where.OR = wordConditions.length ? wordConditions : [ilike("name", query)];
   }
 
   if (minPrice !== undefined || maxPrice !== undefined) {
