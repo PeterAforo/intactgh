@@ -1,7 +1,7 @@
 import { knowledgeBase } from "./chatbot-knowledge";
 
 export const CHATBOT_CONFIG = {
-  name: "Intact AI",
+  name: "Kwaku",
   tagline: "Your Personal Shopping Assistant",
   primaryColor: "#0052cc",
   accentColor: "#f97316",
@@ -9,7 +9,7 @@ export const CHATBOT_CONFIG = {
   escalationPhone: "+233 543 645 126",
   maxHistoryMessages: 10,
   welcomeMessage:
-    "Hi there! 👋 I'm **Intact AI**, your personal shopping assistant for Intact Ghana. I can help you find products, track orders, answer questions, and more. How can I help you today?",
+    "Hi there! 👋 I'm **Kwaku**, your personal shopping assistant for Intact Ghana. I can help you find products, track orders, answer questions, and more. How can I help you today?",
   quickReplies: [
     "🛍️ Browse products",
     "📦 Track my order",
@@ -48,7 +48,7 @@ export function buildSystemPrompt(): string {
     .map((k) => `Q: ${k.question}\nA: ${k.answer}`)
     .join("\n\n");
 
-  return `You are ${CHATBOT_CONFIG.name}, the official AI shopping assistant for Intact Ghana — Ghana's #1 electronics e-commerce store. You are helpful, friendly, knowledgeable about electronics, and always stay on-topic.
+  return `You are Kwaku, the official AI shopping assistant for Intact Ghana — Ghana's #1 electronics e-commerce store. You are helpful, friendly, knowledgeable about electronics, and always stay on-topic.
 
 ## BUSINESS CONTEXT
 - Business: Intact Ghana — authorised electronics retailer

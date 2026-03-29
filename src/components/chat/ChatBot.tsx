@@ -126,7 +126,7 @@ export default function ChatBot() {
         {isOpen && (
           <motion.div
             role="dialog"
-            aria-label="Intact AI chat assistant"
+            aria-label="Open Kwaku chat assistant"
             aria-modal="true"
             initial={{ opacity: 0, y: 24, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -147,7 +147,7 @@ export default function ChatBot() {
                 <p className="font-bold text-sm leading-tight">{CHATBOT_CONFIG.name}</p>
                 <p className="text-xs text-white/70 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
-                  Online · Powered by GPT-4o
+                  Online
                 </p>
               </div>
               <div className="flex items-center gap-1">
@@ -240,7 +240,7 @@ export default function ChatBot() {
 
             {/* Footer branding */}
             <p className="text-center text-[10px] text-gray-400 pb-2 bg-white shrink-0">
-              Powered by <span className="font-semibold text-[#0052cc]">Intact AI</span> · GPT-4o
+              Powered by <span className="font-semibold text-[#0052cc]">Kwaku</span>
             </p>
           </motion.div>
         )}
