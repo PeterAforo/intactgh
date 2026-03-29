@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ShoppingCart, Trash2, ArrowRight, Package } from "lucide-react";
+import { Heart, ShoppingCart, Trash2, ArrowRight, Package, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist-store";
@@ -13,17 +13,53 @@ import { useCartStore, type CartProduct } from "@/store/cart-store";
 type Any = any;
 
 export default function WishlistPage() {
-  const { items, removeItem, clearWishlist } = useWishlistStore();
+  const { items, removeItemDB, removeItem, clearWishlist } = useWishlistStore();
   const addToCart = useCartStore((s) => s.addItem);
-  const [allProducts, setAllProducts] = useState<Any[]>([]);
+  const [wishlistProducts, setWishlistProducts] = useState<Any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    fetch("/api/products?limit=100").then(r => r.json()).then(d => {
-      if (d.products) setAllProducts(d.products);
-    }).catch(() => {});
+    async function loadWishlist() {
+      setLoading(true);
+      // Try DB wishlist first (logged-in user)
+      try {
+        const res = await fetch("/api/wishlist");
+        if (res.ok) {
+          const data = await res.json();
+          setWishlistProducts(data.items ?? []);
+          setIsLoggedIn(true);
+          setLoading(false);
+          return;
+        }
+      } catch { /* fall through */ }
+      // Guest: fetch all products and filter by local IDs
+      try {
+        const res = await fetch("/api/products?limit=200");
+        const data = await res.json();
+        const all: Any[] = data.products ?? [];
+        setWishlistProducts(all.filter((p) => items.includes(p.id)));
+      } catch { /* silent */ }
+      setLoading(false);
+    }
+    loadWishlist();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const wishlistProducts = allProducts.filter((p: Any) => items.includes(p.id));
+  const handleRemove = async (productId: string) => {
+    setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
+    if (isLoggedIn) await removeItemDB(productId);
+    else removeItem(productId);
+  };
+
+  const handleClearAll = async () => {
+    setWishlistProducts([]);
+    if (isLoggedIn) {
+      await Promise.all(wishlistProducts.map((p) => removeItemDB(p.id)));
+    } else {
+      clearWishlist();
+    }
+  };
 
   const handleAddToCart = (product: Any) => {
     const cartProduct: CartProduct = {
@@ -49,13 +85,17 @@ export default function WishlistPage() {
             </p>
           </div>
           {wishlistProducts.length > 0 && (
-            <Button variant="outline" onClick={clearWishlist} className="rounded-xl text-sm">
+            <Button variant="outline" onClick={handleClearAll} className="rounded-xl text-sm">
               Clear All
             </Button>
           )}
         </div>
 
-        {wishlistProducts.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          </div>
+        ) : wishlistProducts.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,7 +112,7 @@ export default function WishlistPage() {
               </Button>
             </Link>
           </motion.div>
-        ) : (
+        ) : loading ? null : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence>
               {wishlistProducts.map((product, i) => (
@@ -135,7 +175,7 @@ export default function WishlistPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => removeItem(product.id)}
+                        onClick={() => handleRemove(product.id)}
                         className="rounded-xl px-2.5"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-accent" />

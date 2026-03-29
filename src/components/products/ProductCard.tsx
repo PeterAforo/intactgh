@@ -35,7 +35,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
-  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItemDB);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
 
   const discount = product.comparePrice
@@ -60,7 +60,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const handleToggleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleWishlist(product.id);
+    void toggleWishlist(product.id);
   };
 
   return (

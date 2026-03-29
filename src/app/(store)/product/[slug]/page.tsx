@@ -26,6 +26,7 @@ import { formatPrice, getDiscountPercentage } from "@/lib/utils";
 import { useCartStore, type CartProduct } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import ProductCard from "@/components/products/ProductCard";
+import ReviewsSection from "@/components/products/ReviewsSection";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -42,7 +43,7 @@ export default function ProductDetailPage() {
 
   const imageRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
-  const toggleWishlist = useWishlistStore((s) => s.toggleItem);
+  const toggleWishlist = useWishlistStore((s) => s.toggleItemDB);
   const isInWishlist = useWishlistStore((s) => product ? s.isInWishlist(product.id) : false);
 
   useEffect(() => {
@@ -360,11 +361,11 @@ export default function ProductDetailPage() {
               </div>
             )}
             {activeTab === "reviews" && (
-              <div className="text-center py-12 text-text-muted">
-                <Star className="w-12 h-12 mx-auto mb-3 text-border" />
-                <p className="text-lg font-medium mb-2">Customer reviews coming soon</p>
-                <p className="text-sm">Be the first to review this product after purchase!</p>
-              </div>
+              <ReviewsSection
+                productId={product.id}
+                productRating={product.rating}
+                reviewCount={product.reviewCount}
+              />
             )}
           </motion.div>
         </div>
