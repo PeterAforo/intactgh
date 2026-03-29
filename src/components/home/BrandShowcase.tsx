@@ -2,10 +2,10 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ArrowRight } from "lucide-react";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Brand = any;
 
@@ -27,6 +27,11 @@ export default function BrandShowcase({ brands: propBrands }: BrandShowcaseProps
       if (d.brands) setBrands(d.brands);
     }).catch(() => {});
   }, [propBrands]);
+
+  // Show only top 16 brands by product count
+  const topBrands = [...brands]
+    .sort((a, b) => (b._count?.products || 0) - (a._count?.products || 0))
+    .slice(0, 16);
 
   useEffect(() => {
     if (containerRef.current && brands.length) {
@@ -73,18 +78,35 @@ export default function BrandShowcase({ brands: propBrands }: BrandShowcaseProps
           ref={containerRef}
           className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4"
         >
-          {brands.map((brand: Brand) => (
+          {topBrands.map((brand: Brand) => (
             <Link
               key={brand.id}
-              href={`/brands/${brand.slug}`}
-              className="brand-logo group bg-surface hover:bg-white border border-border/50 hover:border-accent/30 rounded-xl p-6 flex items-center justify-center h-24 transition-all duration-300 hover:shadow-lg"
+              href={`/shop?brand=${brand.slug}`}
+              className="brand-logo group bg-surface hover:bg-white border border-border/50 hover:border-accent/30 rounded-xl p-6 flex flex-col items-center justify-center h-24 transition-all duration-300 hover:shadow-lg"
             >
               <span className="text-lg font-bold text-text-light group-hover:text-accent transition-colors">
                 {brand.name}
               </span>
+              {brand._count?.products > 0 && (
+                <span className="text-[10px] text-text-muted mt-1">
+                  {brand._count.products} products
+                </span>
+              )}
             </Link>
           ))}
         </div>
+
+        {brands.length > 16 && (
+          <div className="text-center mt-8">
+            <Link
+              href="/brands"
+              className="inline-flex items-center gap-2 text-accent font-semibold hover:underline"
+            >
+              View All {brands.length} Brands
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

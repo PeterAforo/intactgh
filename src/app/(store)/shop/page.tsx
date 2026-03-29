@@ -28,9 +28,11 @@ export default function ShopPage() {
   const searchParams = useSearchParams();
   const filterParam = searchParams.get("filter") || "";
   const sortParam = searchParams.get("sort") || "";
+  const brandParam = searchParams.get("brand") || "";
+  const categoryParam = searchParams.get("category") || "";
   const [search, setSearch] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [selectedBrand, setSelectedBrand] = useState(brandParam);
   const [sortBy, setSortBy] = useState(sortParam || "featured");
   const [gridCols, setGridCols] = useState(4);
   const [showFilters, setShowFilters] = useState(false);

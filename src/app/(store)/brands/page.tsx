@@ -2,19 +2,35 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
+const BRAND_COLORS = [
+  "from-blue-500 to-blue-600",
+  "from-purple-500 to-purple-600",
+  "from-emerald-500 to-emerald-600",
+  "from-orange-500 to-orange-600",
+  "from-rose-500 to-rose-600",
+  "from-cyan-500 to-cyan-600",
+  "from-indigo-500 to-indigo-600",
+  "from-amber-500 to-amber-600",
+];
+
 export default function BrandsPage() {
   const [brands, setBrands] = useState<Any[]>([]);
 
   useEffect(() => {
     fetch("/api/brands").then(r => r.json()).then(d => {
-      if (d.brands) setBrands(d.brands);
+      if (d.brands) {
+        // Sort by product count descending, only keep brands with products
+        const sorted = d.brands
+          .filter((b: Any) => (b._count?.products || 0) > 0)
+          .sort((a: Any, b: Any) => (b._count?.products || 0) - (a._count?.products || 0));
+        setBrands(sorted);
+      }
     }).catch(() => {});
   }, []);
 
@@ -35,7 +51,8 @@ export default function BrandsPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <p className="text-text-muted text-sm mb-6">{brands.length} brands available</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {brands.map((brand: Any, i: number) => {
             const productCount = brand._count?.products || 0;
             return (
@@ -43,29 +60,25 @@ export default function BrandsPage() {
                 key={brand.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
+                transition={{ delay: Math.min(i * 0.03, 0.6) }}
               >
                 <Link
                   href={`/shop?brand=${brand.slug}`}
-                  className="block bg-white rounded-2xl border border-border/50 p-6 text-center group product-card"
+                  className="block bg-white rounded-2xl border border-border/50 p-5 text-center group hover:shadow-lg hover:border-accent/30 transition-all duration-300"
                 >
-                  <div className="relative w-24 h-24 mx-auto mb-4">
-                    <Image
-                      src={brand.logo}
-                      alt={brand.name}
-                      fill
-                      className="object-contain group-hover:scale-110 transition-transform duration-300"
-                      sizes="96px"
-                    />
+                  <div className={`w-14 h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br ${BRAND_COLORS[i % BRAND_COLORS.length]} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                    <span className="text-white font-black text-lg">
+                      {brand.name.charAt(0)}
+                    </span>
                   </div>
-                  <h3 className="text-lg font-bold text-text mb-1 group-hover:text-accent transition-colors">
+                  <h3 className="text-sm font-bold text-text mb-1 group-hover:text-accent transition-colors truncate">
                     {brand.name}
                   </h3>
-                  <Badge variant="outline" className="mb-3">
+                  <Badge variant="outline" className="text-[10px]">
                     {productCount} {productCount === 1 ? "product" : "products"}
                   </Badge>
-                  <div className="flex items-center justify-center gap-1 text-sm text-accent opacity-0 group-hover:opacity-100 transition-opacity">
-                    View Products <ArrowRight className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-center gap-1 text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity mt-2">
+                    View Products <ArrowRight className="w-3 h-3" />
                   </div>
                 </Link>
               </motion.div>
