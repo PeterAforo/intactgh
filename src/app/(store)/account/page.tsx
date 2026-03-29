@@ -88,8 +88,8 @@ export default function AccountPage() {
     }
   };
 
-  const handleLogout = () => {
-    document.cookie = "token=; path=/; max-age=0";
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     setOrders([]);
   };
@@ -130,8 +130,8 @@ export default function AccountPage() {
               {[
                 { icon: Package, label: "My Orders", count: orders.length },
                 { icon: Heart, label: "Wishlist", href: "/wishlist" },
-                { icon: MapPin, label: "Addresses", href: "#" },
-                { icon: Settings, label: "Settings", href: "#" },
+                { icon: MapPin, label: "Addresses", href: "/account" },
+                { icon: Settings, label: "Settings", href: "/account" },
               ].map((link) => (
                 <Link
                   key={link.label}
@@ -353,10 +353,10 @@ export default function AccountPage() {
         {/* Quick Links */}
         <div className="mt-6 grid grid-cols-2 gap-3">
           {[
-            { icon: Package, label: "My Orders", href: "/orders" },
+            { icon: Package, label: "My Orders", href: "/account" },
             { icon: Heart, label: "Wishlist", href: "/wishlist" },
-            { icon: MapPin, label: "Addresses", href: "/addresses" },
-            { icon: Settings, label: "Settings", href: "/settings" },
+            { icon: MapPin, label: "Addresses", href: "/account" },
+            { icon: Settings, label: "Settings", href: "/account" },
           ].map((link) => (
             <Link
               key={link.label}
