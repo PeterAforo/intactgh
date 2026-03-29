@@ -36,17 +36,9 @@ function applyCloudinaryTransforms(url: string, opts: AiOptions): string {
   return url.replace("/upload/", `/upload/${t.join("/")}/`);
 }
 
-function generateSKU(name: string): string {
-  const prefix = name
-    .toUpperCase()
-    .replace(/[^A-Z0-9 ]/g, "")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 3)
-    .map((w) => w.slice(0, 2))
-    .join("");
-  const suffix = Date.now().toString(36).toUpperCase().slice(-4);
-  return `${prefix}-${suffix}`;
+function generateSKU(): string {
+  const num = (Date.now() % 99999) + 1;
+  return `INT${String(num).padStart(5, "0")}`;
 }
 
 function generateTags(name: string, categoryName: string, brandName: string): string {
@@ -147,7 +139,8 @@ export default function NewProductPage() {
 
   // ── Auto-generate SKU when name changes (user can override) ───────────────
   useEffect(() => {
-    if (name) setSku(generateSKU(name));
+    if (name && !sku) setSku(generateSKU());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -507,7 +500,7 @@ export default function NewProductPage() {
             <div className="mt-4">
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-text">SKU</label>
-                <button onClick={() => setSku(generateSKU(name || "PRD"))}
+                <button onClick={() => setSku(generateSKU())}
                   className="text-xs text-accent hover:underline flex items-center gap-1">
                   <RefreshCw className="w-3 h-3" />Regenerate
                 </button>

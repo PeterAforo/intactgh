@@ -53,8 +53,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Auto-generate SKU if not provided
-    const finalSku = sku || `${name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X")}-${Date.now().toString(36).toUpperCase()}`;
+    // Auto-generate sequential SKU: INT00001 – INT99999
+    let finalSku = sku?.trim() || "";
+    if (!finalSku) {
+      const count = await prisma.product.count();
+      finalSku = `INT${String((count + 1) % 99999 || 99999).padStart(5, "0")}`;
+      // Ensure uniqueness in case of gaps/deletes
+      const existing = await prisma.product.findUnique({ where: { sku: finalSku } });
+      if (existing) {
+        finalSku = `INT${String(((count + Date.now()) % 99999) + 1).padStart(5, "0")}`;
+      }
+    }
 
     const product = await prisma.product.create({
       data: {
