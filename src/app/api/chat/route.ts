@@ -37,6 +37,17 @@ function ilike(field: string, word: string): any {
   return { [field]: { contains: word, mode: "insensitive" } };
 }
 
+const ACCESSORY_WORDS = [
+  "charger", "adapter", "cable", "case", "cover", "bag", "sleeve",
+  "stand", "dock", "hub", "mount", "holder", "pouch", "protector",
+  "accessories", "spare", "power supply", "battery",
+];
+
+function isAccessoryCategory(name: string): boolean {
+  const n = name.toLowerCase();
+  return ACCESSORY_WORDS.some((w) => n.includes(w));
+}
+
 const STOP_WORDS = new Set([
   "a","an","the","and","or","in","on","at","to","i","is","it","with","for","of",
   "me","my","get","can","below","under","above","over","around","about","want",
@@ -118,19 +129,34 @@ async function searchProducts(
   if (minPrice !== undefined) priceFilter.gte = minPrice;
   if (maxPrice !== undefined) priceFilter.lte = maxPrice;
 
-  // Tier 1: Find matching category → return products in that category
+  // Tier 1: Find matching category → prefer exact/startsWith/non-accessory matches
   const catTerms = categoryHint ? [categoryHint, ...words] : words;
   let matchedCatIds: string[] = [];
 
   for (const term of catTerms) {
     if (term.length < 3) continue;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cat = await prisma.category.findFirst({
+    const candidates = await prisma.category.findMany({
       where: { name: { contains: term, mode: "insensitive" as any } },
-      select: { id: true, children: { select: { id: true } } },
-    }) as { id: string; children: { id: string }[] } | null;
-    if (cat) {
-      matchedCatIds = [cat.id, ...(cat.children ?? []).map((c: { id: string }) => c.id)];
+      select: { id: true, name: true, children: { select: { id: true } } },
+      take: 20,
+    }) as { id: string; name: string; children: { id: string }[] }[];
+
+    if (!candidates.length) continue;
+
+    // Sort: exact match → startsWith → non-accessory → accessory
+    const scored = candidates
+      .map((c) => ({
+        c,
+        score:
+          (c.name.toLowerCase() === term.toLowerCase() ? 0 : c.name.toLowerCase().startsWith(term.toLowerCase()) ? 1 : 2) +
+          (isAccessoryCategory(c.name) ? 10 : 0),
+      }))
+      .sort((a, b) => a.score - b.score);
+
+    const best = scored[0]?.c;
+    if (best) {
+      matchedCatIds = [best.id, ...(best.children ?? []).map((c) => c.id)];
       break;
     }
   }
@@ -257,10 +283,15 @@ async function fetchAccessories(
   if (!suggestions.length) return [];
 
   const results: ProductDetail[] = [];
+  const seenIds = new Set<string>();
+
   for (const suggestion of suggestions) {
     if (results.length >= limit) break;
     const found = await searchProducts(suggestion.query, undefined, undefined, undefined, undefined, 1);
-    if (found.length > 0) results.push(found[0]);
+    if (found.length > 0 && !seenIds.has(found[0].id) && found[0].name !== productName) {
+      seenIds.add(found[0].id);
+      results.push(found[0]);
+    }
   }
   return results;
 }
