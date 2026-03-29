@@ -15,6 +15,7 @@ import {
   Mail,
   MapPin,
   ChevronDown,
+  ChevronRight,
   Smartphone,
   Laptop,
   Tv,
@@ -55,6 +56,7 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [categories, setCategories] = useState<Cat[]>([]);
   const [authUser, setAuthUser] = useState<{ name?: string; email?: string } | null>(null);
+  const [hoveredCat, setHoveredCat] = useState<Cat | null>(null);
 
   const cartItemCount = useCartStore((s) => s.getItemCount());
   const cartTotal = useCartStore((s) => s.getTotal());
@@ -249,23 +251,64 @@ export default function Header() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full left-0 bg-white text-text shadow-2xl rounded-b-xl w-[280px] z-50 overflow-hidden"
+                  className="absolute top-full left-0 bg-white text-text shadow-2xl rounded-b-xl z-50 flex"
                   onMouseEnter={() => setCategoriesOpen(true)}
-                  onMouseLeave={() => setCategoriesOpen(false)}
+                  onMouseLeave={() => { setCategoriesOpen(false); setHoveredCat(null); }}
                 >
-                  {categories.map((cat: Cat) => (
-                    <Link
-                      key={cat.id}
-                      href={`/shop/${cat.slug}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-surface transition-colors border-b border-border/50 last:border-0"
+                  {/* Primary list - top-level only */}
+                  <div className="w-[260px] overflow-hidden rounded-bl-xl">
+                    {categories.filter((c: Cat) => !c.parentId).map((cat: Cat) => (
+                      <div
+                        key={cat.id}
+                        className="group relative"
+                        onMouseEnter={() => setHoveredCat(cat.children?.length ? cat : null)}
+                      >
+                        <Link
+                          href={`/shop/${cat.slug}`}
+                          className={`flex items-center gap-3 px-4 py-3 hover:bg-surface transition-colors border-b border-border/50 last:border-0 ${
+                            hoveredCat?.id === cat.id ? "bg-surface" : ""
+                          }`}
+                        >
+                          <span className="text-accent">{iconMap[cat.icon] || <Gift className="w-5 h-5" />}</span>
+                          <span className="font-medium text-sm flex-1">{cat.name}</span>
+                          {cat.children?.length > 0 ? (
+                            <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
+                          ) : (
+                            <Badge variant="outline" className="text-[10px]">{cat.productCount}</Badge>
+                          )}
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Subcategory panel */}
+                  {hoveredCat && hoveredCat.children?.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -4 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="w-[220px] border-l border-border bg-surface/60 rounded-br-xl py-2"
                     >
-                      <span className="text-accent">{iconMap[cat.icon] || <Gift className="w-5 h-5" />}</span>
-                      <span className="font-medium text-sm">{cat.name}</span>
-                      <Badge variant="outline" className="ml-auto text-[10px]">
-                        {cat.productCount}
-                      </Badge>
-                    </Link>
-                  ))}
+                      <p className="px-4 pb-2 pt-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                        {hoveredCat.name}
+                      </p>
+                      <Link
+                        href={`/shop/${hoveredCat.slug}`}
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-white hover:text-accent transition-colors font-medium"
+                      >
+                        All {hoveredCat.name}
+                      </Link>
+                      {hoveredCat.children.map((sub: Cat) => (
+                        <Link
+                          key={sub.id}
+                          href={`/shop/${sub.slug}`}
+                          className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-white hover:text-accent transition-colors"
+                        >
+                          <span className="w-1 h-1 rounded-full bg-accent/50 shrink-0" />
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -348,16 +391,28 @@ export default function Header() {
               <div className="p-4 border-t border-border">
                 <p className="text-sm font-semibold text-text-light mb-3">Categories</p>
                 <div className="space-y-1">
-                  {categories.map((cat: Cat) => (
-                    <Link
-                      key={cat.id}
-                      href={`/shop/${cat.slug}`}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-surface transition-colors"
-                    >
-                      <span className="text-accent">{iconMap[cat.icon] || <Gift className="w-5 h-5" />}</span>
-                      <span className="text-sm">{cat.name}</span>
-                    </Link>
+                  {categories.filter((c: Cat) => !c.parentId).map((cat: Cat) => (
+                    <div key={cat.id}>
+                      <Link
+                        href={`/shop/${cat.slug}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-surface transition-colors"
+                      >
+                        <span className="text-accent">{iconMap[cat.icon] || <Gift className="w-5 h-5" />}</span>
+                        <span className="text-sm font-medium">{cat.name}</span>
+                      </Link>
+                      {cat.children?.map((sub: Cat) => (
+                        <Link
+                          key={sub.id}
+                          href={`/shop/${sub.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-2 pl-12 pr-4 py-2 rounded-lg hover:bg-surface transition-colors text-text-muted hover:text-accent"
+                        >
+                          <span className="w-1 h-1 rounded-full bg-accent/50 shrink-0" />
+                          <span className="text-xs">{sub.name}</span>
+                        </Link>
+                      ))}
+                    </div>
                   ))}
                 </div>
               </div>

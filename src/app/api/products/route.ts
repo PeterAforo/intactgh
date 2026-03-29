@@ -19,7 +19,16 @@ export async function GET(request: NextRequest) {
   const where: Prisma.ProductWhereInput = { status: "active" };
 
   if (category) {
-    where.category = { slug: category };
+    const cat = await prisma.category.findUnique({
+      where: { slug: category },
+      select: { id: true, children: { select: { id: true } } },
+    });
+    if (cat) {
+      const ids = [cat.id, ...cat.children.map((c) => c.id)];
+      where.categoryId = { in: ids };
+    } else {
+      where.category = { slug: category };
+    }
   }
   if (brand) {
     where.brand = { slug: brand };

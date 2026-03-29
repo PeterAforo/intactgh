@@ -40,6 +40,7 @@ export default function CategoryPage() {
   const [sortBy, setSortBy] = useState("featured");
   const [gridCols, setGridCols] = useState(4);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 30000]);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(d => {
@@ -55,7 +56,8 @@ export default function CategoryPage() {
   }, [slug]);
 
   const fetchProducts = useCallback(() => {
-    const params = new URLSearchParams({ category: slug, limit: "48", sort: sortBy });
+    const categorySlug = selectedSubcategory || slug;
+    const params = new URLSearchParams({ category: categorySlug, limit: "48", sort: sortBy });
     if (search) params.set("q", search);
     if (selectedBrand) params.set("brand", selectedBrand);
     if (priceRange[0] > 0) params.set("minPrice", String(priceRange[0]));
@@ -63,7 +65,7 @@ export default function CategoryPage() {
     fetch(`/api/products?${params}`).then(r => r.json()).then(d => {
       if (d.products) setFilteredProducts(d.products);
     }).catch(() => {});
-  }, [slug, search, selectedBrand, sortBy, priceRange]);
+  }, [slug, search, selectedBrand, sortBy, priceRange, selectedSubcategory]);
 
   useEffect(() => {
     const t = setTimeout(fetchProducts, 300);
@@ -177,21 +179,53 @@ export default function CategoryPage() {
           </div>
         </div>
 
-        {/* Other Categories */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {allCategories
-            .filter((c: Any) => c.slug !== slug)
-            .map((cat: Any) => (
-              <Link key={cat.id} href={`/shop/${cat.slug}`}>
-                <Badge
-                  variant="outline"
-                  className="cursor-pointer hover:border-accent hover:text-accent transition-colors px-3 py-1.5"
-                >
-                  {cat.name}
-                </Badge>
-              </Link>
+        {/* Subcategory filter chips — shown when this category has children */}
+        {category.children?.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6 items-center">
+            <span className="text-xs font-semibold text-text-muted uppercase tracking-wide mr-1">Filter:</span>
+            <button
+              onClick={() => setSelectedSubcategory("")}
+              className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                selectedSubcategory === ""
+                  ? "bg-accent text-white border-accent"
+                  : "border-border text-text-muted hover:border-accent hover:text-accent"
+              }`}
+            >
+              All {category.name}
+            </button>
+            {category.children.map((sub: Any) => (
+              <button
+                key={sub.id}
+                onClick={() => setSelectedSubcategory(sub.slug)}
+                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+                  selectedSubcategory === sub.slug
+                    ? "bg-accent text-white border-accent"
+                    : "border-border text-text-muted hover:border-accent hover:text-accent"
+                }`}
+              >
+                {sub.name}
+              </button>
             ))}
-        </div>
+          </div>
+        )}
+
+        {/* Sibling/parent navigation — shown when this is a subcategory or has no children */}
+        {!category.children?.length && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {allCategories
+              .filter((c: Any) => c.slug !== slug && !c.parentId)
+              .map((cat: Any) => (
+                <Link key={cat.id} href={`/shop/${cat.slug}`}>
+                  <Badge
+                    variant="outline"
+                    className="cursor-pointer hover:border-accent hover:text-accent transition-colors px-3 py-1.5"
+                  >
+                    {cat.name}
+                  </Badge>
+                </Link>
+              ))}
+          </div>
+        )}
 
         {/* Products Grid */}
         {filteredProducts.length > 0 ? (
