@@ -59,6 +59,14 @@ export default function AccountPage() {
   const [settingsPhone, setSettingsPhone] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
 
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -106,6 +114,31 @@ export default function AccountPage() {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     setOrders([]);
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword) { toast.error("Enter your current password."); return; }
+    if (newPassword.length < 8) { toast.error("New password must be at least 8 characters."); return; }
+    if (newPassword !== confirmNewPassword) { toast.error("Passwords do not match."); return; }
+    setSavingPassword(true);
+    try {
+      const res = await fetch("/api/auth/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const d = await res.json();
+      if (res.ok) {
+        toast.success("Password changed successfully!");
+        setCurrentPassword(""); setNewPassword(""); setConfirmNewPassword("");
+      } else {
+        toast.error(d.error || "Failed to change password.");
+      }
+    } catch {
+      toast.error("Network error.");
+    } finally {
+      setSavingPassword(false);
+    }
   };
 
   const handleSaveSettings = async () => {
@@ -333,7 +366,7 @@ export default function AccountPage() {
                     <div className="px-6 py-4 border-b border-border">
                       <h2 className="font-bold text-text">Account Settings</h2>
                     </div>
-                    <div className="p-6 space-y-5 max-w-md">
+                    <div className="p-6 space-y-6 max-w-md">
                       <div>
                         <label className="text-sm font-medium text-text block mb-1.5">Full Name</label>
                         <div className="relative">
@@ -362,6 +395,66 @@ export default function AccountPage() {
                         {savingSettings ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                         Save Changes
                       </Button>
+
+                      {/* ── Password Change ── */}
+                      <div className="pt-4 border-t border-border">
+                        <h3 className="text-sm font-semibold text-text mb-4 flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-accent" /> Change Password
+                        </h3>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-sm font-medium text-text block mb-1.5">Current Password</label>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                              <Input
+                                type={showCurrentPw ? "text" : "password"}
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                placeholder="Your current password"
+                                className="pl-10 pr-10 rounded-lg"
+                              />
+                              <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text">
+                                {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-text block mb-1.5">New Password</label>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                              <Input
+                                type={showNewPw ? "text" : "password"}
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Min. 8 characters"
+                                className="pl-10 pr-10 rounded-lg"
+                              />
+                              <button type="button" onClick={() => setShowNewPw(!showNewPw)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text">
+                                {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-text block mb-1.5">Confirm New Password</label>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                              <Input
+                                type={showNewPw ? "text" : "password"}
+                                value={confirmNewPassword}
+                                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                placeholder="Re-enter new password"
+                                className="pl-10 rounded-lg"
+                              />
+                            </div>
+                          </div>
+                          <Button onClick={handleChangePassword} disabled={savingPassword} variant="outline" className="rounded-xl w-full">
+                            {savingPassword ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Lock className="w-4 h-4 mr-2" />}
+                            Update Password
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
