@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/utils";
+import { sendCustomerOrderEmail, sendAdminOrderEmail, type OrderEmailData } from "@/lib/email";
+import { sendCustomerOrderSMS, sendAdminOrderSMS } from "@/lib/sms";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,6 +44,8 @@ export async function POST(request: NextRequest) {
       resolvedUserId = user.id;
     }
 
+    const customerName = `${shipping.firstName} ${shipping.lastName || ""}`.trim();
+
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -52,7 +56,7 @@ export async function POST(request: NextRequest) {
         status: "confirmed",
         paymentMethod: paymentMethod || "cod",
         paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
-        shippingName: `${shipping.firstName} ${shipping.lastName || ""}`.trim(),
+        shippingName: customerName,
         shippingPhone: shipping.phone,
         shippingAddress: shipping.street,
         shippingCity: shipping.city,
@@ -67,15 +71,104 @@ export async function POST(request: NextRequest) {
         },
       },
       include: {
-        items: { include: { product: { select: { name: true, slug: true } } } },
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true,
+                slug: true,
+                images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
+              },
+            },
+          },
+        },
+        user: { select: { name: true, email: true, phone: true } },
       },
     });
+
+    // ── Fire notifications (non-blocking — never fail the order response) ────
+    fireOrderNotifications(order, customerName, shipping.email).catch((e) =>
+      console.error("[Notifications] error:", e)
+    );
 
     return NextResponse.json({ success: true, order });
   } catch (error) {
     console.error("Order creation error:", error);
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fireOrderNotifications(order: any, customerName: string, shippingEmail?: string) {
+  // Fetch notification settings from DB
+  const settings = await prisma.siteSetting.findMany({
+    where: { key: { in: ["notification_email", "notification_sms_number", "mnotify_sender_id"] } },
+  });
+  const settingsMap: Record<string, string> = {};
+  for (const s of settings) settingsMap[s.key] = s.value;
+
+  const adminEmail = settingsMap["notification_email"] ?? "sales@intactghana.com";
+  const adminSmsPhone = settingsMap["notification_sms_number"] ?? "";
+  const customerEmail = shippingEmail || (order.user?.email ?? "");
+  const customerPhone = order.shippingPhone ?? order.user?.phone ?? "";
+
+  // Build shared email data
+  const emailData: OrderEmailData = {
+    orderNumber: order.orderNumber,
+    createdAt: order.createdAt,
+    customerName,
+    customerEmail,
+    shippingAddress: order.shippingAddress ?? "",
+    shippingCity: order.shippingCity ?? "",
+    shippingRegion: order.shippingRegion ?? "",
+    shippingPhone: order.shippingPhone ?? "",
+    paymentMethod: order.paymentMethod ?? "cod",
+    subtotal: order.subtotal,
+    deliveryFee: order.shipping ?? 0,
+    total: order.total,
+    notes: order.notes,
+    items: order.items.map((item: any) => ({
+      name: item.product.name,
+      quantity: item.quantity,
+      price: item.price,
+      imageUrl: item.product.images?.[0]?.url ?? undefined,
+    })),
+  };
+
+  await Promise.allSettled([
+    // 1. Customer confirmation email
+    customerEmail
+      ? sendCustomerOrderEmail(emailData)
+      : Promise.resolve(),
+
+    // 2. Admin new-order alert email
+    sendAdminOrderEmail(emailData, adminEmail),
+
+    // 3. Customer SMS
+    customerPhone
+      ? sendCustomerOrderSMS({
+          phone: customerPhone,
+          orderNumber: order.orderNumber,
+          customerName,
+          total: order.total,
+          paymentMethod: order.paymentMethod ?? "cod",
+          itemCount: order.items.length,
+        })
+      : Promise.resolve(),
+
+    // 4. Admin SMS (only if configured in settings)
+    adminSmsPhone
+      ? sendAdminOrderSMS({
+          phone: adminSmsPhone,
+          orderNumber: order.orderNumber,
+          customerName,
+          customerPhone,
+          total: order.total,
+          paymentMethod: order.paymentMethod ?? "cod",
+          city: order.shippingCity ?? "",
+        })
+      : Promise.resolve(),
+  ]);
 }
 
 export async function GET(request: NextRequest) {

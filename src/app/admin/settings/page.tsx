@@ -16,6 +16,9 @@ export default function AdminSettingsPage() {
   const [address, setAddress] = useState("East Legon, A&C Mall, Greater Accra, Ghana");
   const [currency, setCurrency] = useState("GHS");
   const [freeShippingMin, setFreeShippingMin] = useState("3000");
+  const [notificationEmail, setNotificationEmail] = useState("sales@intactghana.com");
+  const [notificationSmsNumber, setNotificationSmsNumber] = useState("");
+  const [mnotifySenderId, setMnotifySenderId] = useState("IntactGH");
 
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
@@ -28,6 +31,9 @@ export default function AdminSettingsPage() {
         if (s.address) setAddress(s.address);
         if (s.currency) setCurrency(s.currency);
         if (s.freeShippingMin) setFreeShippingMin(s.freeShippingMin);
+        if (s.notification_email) setNotificationEmail(s.notification_email);
+        if (s.notification_sms_number) setNotificationSmsNumber(s.notification_sms_number);
+        if (s.mnotify_sender_id) setMnotifySenderId(s.mnotify_sender_id);
       }
     }).catch(() => {});
   }, []);
@@ -37,7 +43,7 @@ export default function AdminSettingsPage() {
     try {
       const res = await fetch("/api/admin/settings", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeName, tagline, email, phone, address, currency, freeShippingMin }),
+        body: JSON.stringify({ storeName, tagline, email, phone, address, currency, freeShippingMin, notification_email: notificationEmail, notification_sms_number: notificationSmsNumber, mnotify_sender_id: mnotifySenderId }),
       });
       if (!res.ok) throw new Error("Failed to save");
       toast.success("Settings saved successfully");
@@ -191,25 +197,52 @@ export default function AdminSettingsPage() {
             <Bell className="w-5 h-5 text-success" />
           </div>
           <div>
-            <h2 className="font-bold text-text">Notifications</h2>
-            <p className="text-xs text-text-muted">Configure email and notification preferences</p>
+            <h2 className="font-bold text-text">Order Notifications</h2>
+            <p className="text-xs text-text-muted">Configure where new order alerts are sent (email + SMS)</p>
           </div>
         </div>
-        <div className="space-y-4">
-          {[
-            { label: "New order notifications", desc: "Get notified when a new order is placed", checked: true },
-            { label: "Low stock alerts", desc: "Alert when product stock falls below threshold", checked: true },
-            { label: "Customer registration", desc: "Notify when a new customer registers", checked: false },
-            { label: "Newsletter subscriptions", desc: "Notify when someone subscribes to newsletter", checked: false },
-          ].map((item) => (
-            <label key={item.label} className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-surface transition-colors">
-              <input type="checkbox" defaultChecked={item.checked} className="rounded border-border text-accent focus:ring-accent mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-text">{item.label}</p>
-                <p className="text-xs text-text-muted">{item.desc}</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <label className="text-sm font-medium text-text block mb-1.5">
+              <Mail className="w-3.5 h-3.5 inline mr-1" />Order Notification Email
             </label>
-          ))}
+            <Input
+              value={notificationEmail}
+              onChange={(e) => setNotificationEmail(e.target.value)}
+              placeholder="sales@intactghana.com"
+              className="rounded-lg"
+            />
+            <p className="text-xs text-text-muted mt-1">Admin receives new order alert emails at this address.</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">
+              <Phone className="w-3.5 h-3.5 inline mr-1" />Intact Ghana SMS Number
+            </label>
+            <Input
+              value={notificationSmsNumber}
+              onChange={(e) => setNotificationSmsNumber(e.target.value)}
+              placeholder="+233543645126"
+              className="rounded-lg"
+            />
+            <p className="text-xs text-text-muted mt-1">Receives new order SMS alerts via mNotify.</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-text block mb-1.5">mNotify Sender ID</label>
+            <Input
+              value={mnotifySenderId}
+              onChange={(e) => setMnotifySenderId(e.target.value)}
+              placeholder="IntactGH"
+              maxLength={11}
+              className="rounded-lg"
+            />
+            <p className="text-xs text-text-muted mt-1">Max 11 characters. Must be registered with mNotify.</p>
+          </div>
+        </div>
+        <div className="mt-6 pt-4 border-t border-border">
+          <p className="text-xs text-text-muted">
+            <strong>Note:</strong> Email notifications require <code className="bg-surface px-1 rounded">SMTP_HOST</code>, <code className="bg-surface px-1 rounded">SMTP_USER</code> and <code className="bg-surface px-1 rounded">SMTP_PASS</code> in your .env.
+            SMS notifications require <code className="bg-surface px-1 rounded">MNOTIFY_API_KEY</code> in your .env.
+          </p>
         </div>
       </motion.div>
     </div>
