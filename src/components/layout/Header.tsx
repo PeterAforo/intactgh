@@ -54,6 +54,7 @@ export default function Header() {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [categories, setCategories] = useState<Cat[]>([]);
+  const [authUser, setAuthUser] = useState<{ name?: string; email?: string } | null>(null);
 
   const cartItemCount = useCartStore((s) => s.getItemCount());
   const cartTotal = useCartStore((s) => s.getTotal());
@@ -64,6 +65,9 @@ export default function Header() {
     setMounted(true);
     fetch("/api/categories").then(r => r.json()).then(d => {
       if (d.categories) setCategories(d.categories);
+    }).catch(() => {});
+    fetch("/api/auth/me").then(r => r.json()).then(d => {
+      if (d.user) setAuthUser(d.user);
     }).catch(() => {});
   }, []);
 
@@ -169,9 +173,14 @@ export default function Header() {
 
             <Link
               href="/account"
-              className="p-2 hover:bg-surface rounded-lg transition-colors hidden sm:block"
+              className="flex items-center gap-1.5 px-2 py-2 hover:bg-surface rounded-lg transition-colors hidden sm:flex"
             >
-              <User className="w-5 h-5" />
+              <User className="w-5 h-5 shrink-0" />
+              {mounted && authUser && (
+                <span className="text-sm font-medium text-text hidden md:block max-w-[90px] truncate">
+                  {authUser.name?.split(" ")[0] || authUser.email?.split("@")[0]}
+                </span>
+              )}
             </Link>
 
             <Link
