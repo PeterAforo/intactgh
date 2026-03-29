@@ -129,6 +129,19 @@ export default function CheckoutPage() {
             email: d.user.email || prev.email,
             phone: d.user.phone || prev.phone,
           }));
+        } else {
+          // Guest: try pre-fill from Kwaku chatbot session
+          try {
+            const prefill = JSON.parse(sessionStorage.getItem("kwaku_prefill") ?? "{}");
+            if (prefill.firstName || prefill.phone) {
+              setShipping((prev) => ({
+                ...prev,
+                firstName: prefill.firstName || prev.firstName,
+                phone: prefill.phone || prev.phone,
+              }));
+              sessionStorage.removeItem("kwaku_prefill");
+            }
+          } catch { /* ignore */ }
         }
       })
       .catch(() => {});

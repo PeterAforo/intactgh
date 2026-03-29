@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildSystemPrompt, type ChatbotResponse } from "@/lib/chatbot-config";
+import { buildSystemPrompt, type ChatbotResponse, type ProductPreview } from "@/lib/chatbot-config";
+import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 // In-memory rate limiter: max 30 requests per IP per minute
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -14,6 +16,60 @@ function checkRateLimit(ip: string): boolean {
   if (entry.count >= 30) return false;
   entry.count++;
   return true;
+}
+
+async function searchProducts(
+  query: string,
+  minPrice?: number,
+  maxPrice?: number,
+  limit = 6
+): Promise<ProductPreview[]> {
+  const where: Prisma.ProductWhereInput = { status: "active" };
+
+  if (query) {
+    where.OR = [
+      { name: { contains: query } },
+      { description: { contains: query } },
+      { tags: { contains: query } },
+      { category: { name: { contains: query } } },
+      { brand: { name: { contains: query } } },
+    ];
+  }
+
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    where.price = {};
+    if (minPrice !== undefined) (where.price as Prisma.FloatFilter).gte = minPrice;
+    if (maxPrice !== undefined) (where.price as Prisma.FloatFilter).lte = maxPrice;
+  }
+
+  const rows = await prisma.product.findMany({
+    where,
+    select: {
+      id: true, name: true, price: true, comparePrice: true, slug: true, stock: true,
+      images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
+    },
+    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+    take: limit,
+  });
+
+  return rows.map((p) => ({
+    id: p.id, name: p.name, price: p.price,
+    comparePrice: p.comparePrice, slug: p.slug, stock: p.stock,
+    image: p.images[0]?.url,
+  }));
+}
+
+function parsePriceFromText(text: string): { min?: number; max?: number } {
+  const t = text.replace(/,/g, "");
+  const range = t.match(/(\d+)\s*[-–to]+\s*(\d+)/);
+  if (range) return { min: parseFloat(range[1]), max: parseFloat(range[2]) };
+  const under = t.match(/under\s+(?:gh[₵c]?|ghc)?\s*(\d+)/i);
+  if (under) return { max: parseFloat(under[1]) };
+  const above = t.match(/(?:above|over)\s+(?:gh[₵c]?|ghc)?\s*(\d+)/i);
+  if (above) return { min: parseFloat(above[1]) };
+  const budget = t.match(/budget\s+(?:of\s+)?(?:gh[₵c]?|ghc)?\s*(\d+)/i);
+  if (budget) return { max: parseFloat(budget[1]) };
+  return {};
 }
 
 export async function POST(request: NextRequest) {
@@ -99,6 +155,34 @@ export async function POST(request: NextRequest) {
     }
     if (!parsed.action) parsed.action = "none";
     if (!parsed.quick_replies) parsed.quick_replies = [];
+
+    // ── Server-side product search ────────────────────────────────────────────
+    if (parsed.action === "show_products") {
+      const query = parsed.action_payload?.query ?? "";
+      let minPrice = parsed.action_payload?.minPrice
+        ? parseFloat(parsed.action_payload.minPrice)
+        : undefined;
+      let maxPrice = parsed.action_payload?.maxPrice
+        ? parseFloat(parsed.action_payload.maxPrice)
+        : undefined;
+
+      // Fall back to parsing price range from the last user message
+      if (minPrice === undefined && maxPrice === undefined) {
+        const lastUser = history.filter((m) => m.role === "user").pop()?.content ?? "";
+        const pp = parsePriceFromText(lastUser);
+        minPrice = pp.min;
+        maxPrice = pp.max;
+      }
+
+      const products = await searchProducts(query, minPrice, maxPrice);
+      parsed.products = products;
+
+      if (products.length === 0) {
+        parsed.message = `I searched our store but couldn't find products matching "${query}"${minPrice || maxPrice ? " in that price range" : ""}. Try a broader search or browse our full shop.`;
+        parsed.action = "none";
+        parsed.quick_replies = ["Browse all products", "Try different search", "Contact us"];
+      }
+    }
 
     return NextResponse.json(parsed);
   } catch (err) {

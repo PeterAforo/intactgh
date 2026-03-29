@@ -15,7 +15,8 @@ import { Input } from "@/components/ui/input";
 import { useChatbot } from "@/hooks/useChatbot";
 import ChatMessage from "./ChatMessage";
 import TypingIndicator from "./TypingIndicator";
-import { CHATBOT_CONFIG } from "@/lib/chatbot-config";
+import { CHATBOT_CONFIG, type ProductPreview } from "@/lib/chatbot-config";
+import { useCartStore } from "@/store/cart-store";
 
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +26,21 @@ export default function ChatBot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { messages, isLoading, sendMessage, resetChat } = useChatbot();
+  const { messages, isLoading, sendMessage, resetChat, confirmAddToCart } = useChatbot();
+  const { addItem, getItemCount } = useCartStore();
+
+  const handleAddToCart = (product: ProductPreview) => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      comparePrice: product.comparePrice,
+      image: product.image ?? "",
+      stock: product.stock,
+    });
+    confirmAddToCart(product.name, getItemCount() + 1);
+  };
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -182,6 +197,7 @@ export default function ChatBot() {
                   key={msg.id}
                   message={msg}
                   onQuickReply={handleQuickReply}
+                  onAddToCart={handleAddToCart}
                   isLastMessage={idx === messages.length - 1}
                   isLoading={isLoading}
                 />

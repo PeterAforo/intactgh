@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { ChatbotResponse } from "@/lib/chatbot-config";
+import type { ChatbotResponse, ProductPreview } from "@/lib/chatbot-config";
 import { CHATBOT_CONFIG } from "@/lib/chatbot-config";
 
 export interface ChatMessage {
@@ -12,10 +12,12 @@ export interface ChatMessage {
   quickReplies?: string[];
   action?: ChatbotResponse["action"];
   action_payload?: Record<string, string>;
+  products?: ProductPreview[];
   isError?: boolean;
 }
 
 export type LeadStep = "idle" | "name" | "email" | "message" | "done";
+export type CheckoutStep = "idle" | "name" | "phone" | "done";
 
 export interface LeadState {
   step: LeadStep;
@@ -31,6 +33,14 @@ const INITIAL_LEAD: LeadState = {
   message: "",
 };
 
+export interface CheckoutState {
+  step: CheckoutStep;
+  firstName: string;
+  phone: string;
+}
+
+const INITIAL_CHECKOUT: CheckoutState = { step: "idle", firstName: "", phone: "" };
+
 export function useChatbot() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -44,6 +54,7 @@ export function useChatbot() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [leadState, setLeadState] = useState<LeadState>(INITIAL_LEAD);
+  const [checkoutState, setCheckoutState] = useState<CheckoutState>(INITIAL_CHECKOUT);
   const [pendingNewsletterEmail, setPendingNewsletterEmail] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -201,10 +212,83 @@ export function useChatbot() {
     [addMessage]
   );
 
+  // ── Checkout collection flow ────────────────────────────────────────────────
+  const handleCheckoutInput = useCallback(
+    async (input: string) => {
+      const trimmed = input.trim();
+      if (!trimmed) return false;
+
+      addMessage({ role: "user", content: trimmed });
+
+      if (checkoutState.step === "name") {
+        setCheckoutState((prev) => ({ ...prev, firstName: trimmed, step: "phone" }));
+        addMessage({
+          role: "assistant",
+          content: `Great **${trimmed}**! 📞 What's your phone number so we can reach you?`,
+          quickReplies: [],
+        });
+        return true;
+      }
+
+      if (checkoutState.step === "phone") {
+        const finalData = { ...checkoutState, phone: trimmed, step: "done" as CheckoutStep };
+        setCheckoutState(finalData);
+        // Store in sessionStorage for checkout page pre-fill
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("kwaku_prefill", JSON.stringify({
+            firstName: finalData.firstName,
+            phone: trimmed,
+          }));
+        }
+        addMessage({
+          role: "assistant",
+          content: `Perfect! Taking you to checkout now with your cart. You can fill in your delivery address on the next page. 🛒`,
+          quickReplies: [],
+          action: "redirect",
+          action_payload: { url: "/checkout", label: "Go to Checkout" },
+        });
+        setTimeout(() => setCheckoutState(INITIAL_CHECKOUT), 1000);
+        return true;
+      }
+
+      return false;
+    },
+    [checkoutState, addMessage]
+  );
+
+  // ── Exposed: bot confirms an add-to-cart ────────────────────────────────────
+  const confirmAddToCart = useCallback(
+    (productName: string, cartCount: number) => {
+      addMessage({
+        role: "assistant",
+        content: `✅ **${productName}** added to your cart! You now have **${cartCount}** item${cartCount !== 1 ? "s" : ""} in your cart.`,
+        quickReplies: ["Continue browsing", "Go to Checkout"],
+        action: "none",
+      });
+    },
+    [addMessage]
+  );
+
+  // ── Exposed: trigger guest checkout detail collection ───────────────────────
+  const triggerCheckout = useCallback(() => {
+    setCheckoutState({ step: "name", firstName: "", phone: "" });
+    addMessage({
+      role: "assistant",
+      content: "Let me help you checkout! First, what's your name?",
+      quickReplies: [],
+    });
+  }, [addMessage]);
+
   // ── Main send function ──────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading) return;
+
+      // Route to checkout collection flow if active
+      if (checkoutState.step !== "idle" && checkoutState.step !== "done") {
+        await handleCheckoutInput(text);
+        return;
+      }
 
       // Route to lead capture flow if active
       if (leadState.step !== "idle" && leadState.step !== "done") {
@@ -215,6 +299,12 @@ export function useChatbot() {
       // Route to newsletter flow if awaiting email
       if (pendingNewsletterEmail) {
         await handleNewsletterInput(text);
+        return;
+      }
+
+      // Handle "Go to Checkout" quick reply locally without AI call
+      if (text.toLowerCase() === "go to checkout") {
+        triggerCheckout();
         return;
       }
 
@@ -245,12 +335,18 @@ export function useChatbot() {
           setPendingNewsletterEmail(true);
         }
 
+        if (response.action === "checkout_prompt") {
+          triggerCheckout();
+          return;
+        }
+
         addMessage({
           role: "assistant",
           content: response.message,
           quickReplies: response.quick_replies ?? [],
           action: response.action,
           action_payload: response.action_payload,
+          products: response.products,
         });
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -267,14 +363,17 @@ export function useChatbot() {
     },
     [
       isLoading,
+      checkoutState,
       leadState,
       pendingNewsletterEmail,
       messages,
       addMessage,
       buildHistory,
       callChatAPI,
+      handleCheckoutInput,
       handleLeadInput,
       handleNewsletterInput,
+      triggerCheckout,
     ]
   );
 
@@ -290,6 +389,7 @@ export function useChatbot() {
       },
     ]);
     setLeadState(INITIAL_LEAD);
+    setCheckoutState(INITIAL_CHECKOUT);
     setPendingNewsletterEmail(false);
     setIsLoading(false);
   }, []);
@@ -298,7 +398,10 @@ export function useChatbot() {
     messages,
     isLoading,
     leadState,
+    checkoutState,
     sendMessage,
     resetChat,
+    confirmAddToCart,
+    triggerCheckout,
   };
 }

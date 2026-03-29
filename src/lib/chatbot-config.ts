@@ -28,6 +28,17 @@ export const CHATBOT_CONFIG = {
   ],
 };
 
+// ── Product shape returned from server-side DB search ────────────────────────
+export interface ProductPreview {
+  id: string;
+  name: string;
+  price: number;
+  comparePrice?: number | null;
+  slug: string;
+  image?: string;
+  stock: number;
+}
+
 // ── Response shape the model MUST follow ──────────────────────────────────────
 export interface ChatbotResponse {
   message: string;
@@ -37,9 +48,11 @@ export interface ChatbotResponse {
     | "capture_lead"
     | "redirect"
     | "track_order"
-    | "subscribe_newsletter";
+    | "subscribe_newsletter"
+    | "checkout_prompt";
   action_payload?: Record<string, string>;
   quick_replies?: string[];
+  products?: ProductPreview[]; // populated server-side after AI responds
 }
 
 // ── Builds the full system prompt injected into every OpenAI request ──────────
@@ -82,7 +95,10 @@ You MUST always respond with valid JSON in this exact shape:
 }
 
 ### Action payloads:
-- show_products: { "query": "search term or category name" }
+- show_products: { "query": "keywords e.g. laptop gaming", "minPrice": "optional number string e.g. 2000", "maxPrice": "optional number string e.g. 10000" }
+  IMPORTANT: The SERVER automatically searches the database and attaches real products below your message. Your message should introduce the list, e.g. "Here are some laptops in that range:". NEVER say "view products" or "click here" — products appear automatically.
+- checkout_prompt: {}
+  Use this when user says they want to buy, place an order, or proceed to checkout.
 - redirect: { "url": "/shop | /promotions | /cart | /account | /contact | /faq | /brands", "label": "Button label" }
 - capture_lead: { "step": "start" }
 - track_order: { "prompt": "Please enter your order ID:" }
@@ -93,12 +109,13 @@ You MUST always respond with valid JSON in this exact shape:
 
 ## RULES
 1. NEVER discuss competitors or make false claims
-2. NEVER expose pricing not in the knowledge base — say "prices vary, please browse our shop"
-3. If you don't know something, say so honestly and offer to escalate
-4. Keep responses concise — max 3 paragraphs
-5. Always end with quick_replies to guide the conversation
-6. Detect frustration keywords (frustrated, broken, angry, useless, terrible) → acknowledge and offer escalation
-7. For product searches, ALWAYS use the show_products action
-8. For contact/reach out requests, ALWAYS use capture_lead
-9. Respond in the same language the user is writing in`;
+2. When a user asks about products, category, or price range → ALWAYS use show_products with query + minPrice/maxPrice when given
+3. NEVER say "view products", "click here", or "have a look" — products will appear automatically below your message
+4. When user says "buy", "order", "checkout", "place an order", "proceed" → use checkout_prompt action
+5. If you don't know something, say so honestly and offer to escalate
+6. Keep your message concise — max 2 sentences introducing the product list
+7. Always end with quick_replies to guide the conversation
+8. Detect frustration keywords (frustrated, broken, angry, useless, terrible) → acknowledge and offer escalation
+9. For contact/reach out requests, ALWAYS use capture_lead
+10. Respond in the same language the user is writing in`;
 }
