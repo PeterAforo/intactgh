@@ -39,8 +39,8 @@ export default function NewProductPage() {
   const [featured, setFeatured] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [onSale, setOnSale] = useState(false);
-  const [imageUrls, setImageUrls] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [categories, setCategories] = useState<Any[]>([]);
   const [brands, setBrands] = useState<Any[]>([]);
 
@@ -49,11 +49,10 @@ export default function NewProductPage() {
     setSaving(true);
     try {
       const finalSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "");
-      const imgList = imageUrls ? imageUrls.split("\n").filter(Boolean).map(url => ({ url: url.trim() })) : [];
+      const imgList = images.map((url) => ({ url }));
       const body = {
         name, slug: finalSlug, description, price, comparePrice, sku, stock,
-        categoryId, brandId, featured, isNew, onSale, tags,
-        images: imgList,
+        categoryId, brandId, featured, isNew, onSale, tags, images: imgList,
       };
       const res = await fetch("/api/admin/products", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -78,19 +77,33 @@ export default function NewProductPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadToCloudinary = async (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
+    return data.url as string;
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files) {
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            setImages((prev) => [...prev, e.target!.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
+    if (!files || files.length === 0) return;
+    const fileArr = Array.from(files);
+    setUploadingCount((n) => n + fileArr.length);
+    await Promise.allSettled(
+      fileArr.map(async (file) => {
+        try {
+          const url = await uploadToCloudinary(file);
+          setImages((prev) => [...prev, url]);
+        } catch (err: Any) {
+          toast.error(err.message || "Image upload failed");
+        } finally {
+          setUploadingCount((n) => Math.max(0, n - 1));
+        }
+      })
+    );
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
@@ -112,7 +125,7 @@ export default function NewProductPage() {
     }
   };
 
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (videoRef.current && canvasRef.current) {
       const canvas = canvasRef.current;
       const video = videoRef.current;
@@ -120,12 +133,24 @@ export default function NewProductPage() {
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext("2d");
       ctx?.drawImage(video, 0, 0);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-      setImages((prev) => [...prev, dataUrl]);
 
       const stream = video.srcObject as MediaStream;
       stream?.getTracks().forEach((track) => track.stop());
       setCameraMode(false);
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+        setUploadingCount((n) => n + 1);
+        try {
+          const url = await uploadToCloudinary(file);
+          setImages((prev) => [...prev, url]);
+        } catch (err: Any) {
+          toast.error(err.message || "Camera upload failed");
+        } finally {
+          setUploadingCount((n) => Math.max(0, n - 1));
+        }
+      }, "image/jpeg", 0.9);
     }
   };
 
@@ -285,6 +310,17 @@ export default function NewProductPage() {
                   </div>
                 )}
               </motion.div>
+            )}
+
+            {/* Upload progress */}
+            {uploadingCount > 0 && (
+              <div className="mb-3 flex items-center gap-2 text-sm text-accent bg-accent/5 rounded-lg px-3 py-2">
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                </svg>
+                Uploading {uploadingCount} image{uploadingCount > 1 ? "s" : ""} to Cloudinary…
+              </div>
             )}
 
             {/* Image Grid */}
