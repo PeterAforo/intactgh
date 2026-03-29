@@ -23,63 +23,140 @@ function ilike(field: string, word: string): any {
   return { [field]: { contains: word, mode: "insensitive" } };
 }
 
+const STOP_WORDS = new Set([
+  "a","an","the","and","or","in","on","at","to","i","is","it","with","for","of",
+  "me","my","get","can","below","under","above","over","around","about","want",
+  "need","looking","show","find","cedis","cedi","ghc","gh","please","some","any",
+  "good","best","cheap","expensive","buy","have","you","do","price","priced",
+]);
+
+function parseKeywords(query: string): string[] {
+  return query
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !STOP_WORDS.has(w));
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapRow(p: any): ProductPreview {
+  return {
+    id: p.id, name: p.name, price: p.price,
+    comparePrice: p.comparePrice, slug: p.slug, stock: p.stock,
+    image: p.images[0]?.url,
+  };
+}
+
+const PRODUCT_SELECT = {
+  id: true, name: true, price: true, comparePrice: true, slug: true, stock: true,
+  images: { orderBy: { order: "asc" as const }, take: 1, select: { url: true } },
+};
+const PRODUCT_ORDER: Prisma.ProductOrderByWithRelationInput[] = [
+  { featured: "desc" }, { createdAt: "desc" },
+];
+
+/**
+ * Smart 3-tier product search:
+ *  1. Category-first: match query to a category, return products IN that category
+ *  2. Name + brand: search product name and brand name only (no description)
+ *  3. Broad fallback: include tags and category name in search
+ */
 async function searchProducts(
   query: string,
   minPrice?: number,
   maxPrice?: number,
+  categoryHint?: string,
   limit = 6
 ): Promise<ProductPreview[]> {
-  const where: Prisma.ProductWhereInput = { status: "active" };
+  const words = parseKeywords(query);
+  if (words.length === 0 && !categoryHint) return [];
 
-  if (query) {
-    // Split into individual keywords; skip stop-words under 2 chars
-    const stopWords = new Set(["a", "an", "the", "and", "or", "in", "on", "at", "to", "i", "is", "it", "with", "for", "of"]);
-    const words = query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > 1 && !stopWords.has(w));
+  const priceFilter: Prisma.FloatFilter = { gt: 0 };
+  if (minPrice !== undefined) priceFilter.gte = minPrice;
+  if (maxPrice !== undefined) priceFilter.lte = maxPrice;
 
-    const wordConditions: Prisma.ProductWhereInput[] = words.flatMap((w) => [
-      ilike("name", w),
-      ilike("description", w),
-      ilike("tags", w),
-      { category: ilike("name", w) },
-      { brand: ilike("name", w) },
-    ]);
+  // ── Tier 1: Category-first search ──────────────────────────────────
+  const catTerms = categoryHint ? [categoryHint, ...words] : words;
+  let matchedCat: { id: string; children: { id: string }[] } | null = null;
 
-    where.OR = wordConditions.length ? wordConditions : [ilike("name", query)];
+  for (const term of catTerms) {
+    if (term.length < 3) continue;
+    matchedCat = await prisma.category.findFirst({
+      where: { name: { contains: term, mode: "insensitive" } },
+      select: { id: true, children: { select: { id: true } } },
+    });
+    if (matchedCat) break;
   }
 
-  if (minPrice !== undefined || maxPrice !== undefined) {
-    where.price = {};
-    if (minPrice !== undefined) (where.price as Prisma.FloatFilter).gte = minPrice;
-    if (maxPrice !== undefined) (where.price as Prisma.FloatFilter).lte = maxPrice;
+  if (matchedCat) {
+    const catIds = [matchedCat.id, ...matchedCat.children.map((c) => c.id)];
+
+    // Also check if any word matches a brand
+    let brandId: string | undefined;
+    for (const w of words) {
+      const brand = await prisma.brand.findFirst({
+        where: { name: { contains: w, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (brand) { brandId = brand.id; break; }
+    }
+
+    const catWhere: Prisma.ProductWhereInput = {
+      status: "active",
+      price: priceFilter,
+      categoryId: { in: catIds },
+    };
+    if (brandId) catWhere.brandId = brandId;
+
+    const catResults = await prisma.product.findMany({
+      where: catWhere, select: PRODUCT_SELECT, orderBy: PRODUCT_ORDER, take: limit,
+    });
+    if (catResults.length > 0) return catResults.map(mapRow);
   }
 
-  const rows = await prisma.product.findMany({
-    where,
-    select: {
-      id: true, name: true, price: true, comparePrice: true, slug: true, stock: true,
-      images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
+  // ── Tier 2: Name + brand only (no description) ────────────────────
+  const nameResults = await prisma.product.findMany({
+    where: {
+      status: "active",
+      price: priceFilter,
+      OR: words.flatMap((w) => [
+        ilike("name", w),
+        { brand: ilike("name", w) },
+      ]) as Prisma.ProductWhereInput[],
     },
-    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-    take: limit,
+    select: PRODUCT_SELECT, orderBy: PRODUCT_ORDER, take: limit,
   });
+  if (nameResults.length > 0) return nameResults.map(mapRow);
 
-  return rows.map((p) => ({
-    id: p.id, name: p.name, price: p.price,
-    comparePrice: p.comparePrice, slug: p.slug, stock: p.stock,
-    image: p.images[0]?.url,
-  }));
+  // ── Tier 3: Broad fallback (tags + category name, still no description) ─
+  const broadResults = await prisma.product.findMany({
+    where: {
+      status: "active",
+      price: priceFilter,
+      OR: words.flatMap((w) => [
+        ilike("name", w),
+        ilike("tags", w),
+        { category: ilike("name", w) },
+        { brand: ilike("name", w) },
+      ]) as Prisma.ProductWhereInput[],
+    },
+    select: PRODUCT_SELECT, orderBy: PRODUCT_ORDER, take: limit,
+  });
+  return broadResults.map(mapRow);
 }
 
 function parsePriceFromText(text: string): { min?: number; max?: number } {
   const t = text.replace(/,/g, "");
   const range = t.match(/(\d+)\s*[-–to]+\s*(\d+)/);
   if (range) return { min: parseFloat(range[1]), max: parseFloat(range[2]) };
-  const under = t.match(/under\s+(?:gh[₵c]?|ghc)?\s*(\d+)/i);
+  // "under/below X" or "under/below GHC X"
+  const under = t.match(/(?:under|below)\s+(?:gh[₵c]?|ghc)?\s*(\d+)/i);
   if (under) return { max: parseFloat(under[1]) };
-  const above = t.match(/(?:above|over)\s+(?:gh[₵c]?|ghc)?\s*(\d+)/i);
+  // "X cedis" / "GHC X" as a budget cap
+  const cedis = t.match(/(?:gh[₵c]?|ghc)?\s*(\d{3,})\s*(?:cedis?|ghc)?/i);
+  if (cedis && /below|under|budget|cheap|within|less/i.test(t))
+    return { max: parseFloat(cedis[1]) };
+  const above = t.match(/(?:above|over|from)\s+(?:gh[₵c]?|ghc)?\s*(\d+)/i);
   if (above) return { min: parseFloat(above[1]) };
   const budget = t.match(/budget\s+(?:of\s+)?(?:gh[₵c]?|ghc)?\s*(\d+)/i);
   if (budget) return { max: parseFloat(budget[1]) };
@@ -173,6 +250,7 @@ export async function POST(request: NextRequest) {
     // ── Server-side product search ────────────────────────────────────────────
     if (parsed.action === "show_products") {
       const query = parsed.action_payload?.query ?? "";
+      const categoryHint = parsed.action_payload?.category;
       let minPrice = parsed.action_payload?.minPrice
         ? parseFloat(parsed.action_payload.minPrice)
         : undefined;
@@ -188,7 +266,7 @@ export async function POST(request: NextRequest) {
         maxPrice = pp.max;
       }
 
-      const products = await searchProducts(query, minPrice, maxPrice);
+      const products = await searchProducts(query, minPrice, maxPrice, categoryHint);
       parsed.products = products;
 
       if (products.length === 0) {

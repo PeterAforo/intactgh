@@ -95,8 +95,9 @@ You MUST always respond with valid JSON in this exact shape:
 }
 
 ### Action payloads:
-- show_products: { "query": "keywords e.g. laptop gaming", "minPrice": "optional number string e.g. 2000", "maxPrice": "optional number string e.g. 10000" }
+- show_products: { "query": "specific product keywords e.g. hp laptop gaming", "category": "optional category hint e.g. laptop, smartphone, printer, tv, ups, speaker", "minPrice": "optional number string e.g. 2000", "maxPrice": "optional number string e.g. 10000" }
   IMPORTANT: The SERVER automatically searches the database and attaches real products below your message. Your message should introduce the list, e.g. "Here are some laptops in that range:". NEVER say "view products" or "click here" — products appear automatically.
+  CRITICAL: Always include the "category" field when the user asks about a product TYPE (e.g. laptop, phone, printer, TV, camera, speaker, UPS, tablet). This ensures only actual products of that type are returned, not accessories.
 - checkout_prompt: {}
   Use this when user says they want to buy, place an order, or proceed to checkout.
 - redirect: { "url": "/shop | /promotions | /cart | /account | /contact | /faq | /brands", "label": "Button label" }
