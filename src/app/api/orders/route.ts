@@ -184,7 +184,16 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         user: { select: { id: true, name: true, email: true } },
-        items: { include: { product: { select: { name: true, slug: true } } } },
+        items: {
+          include: {
+            product: {
+              select: {
+                name: true, slug: true,
+                images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * limit,

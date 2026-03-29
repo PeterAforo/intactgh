@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -111,6 +111,29 @@ export default function CheckoutPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [deliveryEstimate, setDeliveryEstimate] = useState<{ fee: number; time: string } | null>(null);
   const [estimatingDelivery, setEstimatingDelivery] = useState(false);
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setLoggedInUserId(d.user.id);
+          setIsLoggedIn(true);
+          const nameParts = (d.user.name || "").split(" ");
+          setShipping((prev) => ({
+            ...prev,
+            firstName: nameParts[0] || prev.firstName,
+            lastName: nameParts.slice(1).join(" ") || prev.lastName,
+            email: d.user.email || prev.email,
+            phone: d.user.phone || prev.phone,
+          }));
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [shipping, setShipping] = useState({
     firstName: "",
@@ -314,6 +337,7 @@ export default function CheckoutPage() {
           deliveryFee: finalDeliveryFee,
           total,
           paymentMethod,
+          ...(loggedInUserId ? { userId: loggedInUserId } : {}),
         }),
       });
       const orderData = await orderRes.json();
@@ -593,8 +617,14 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Register Option */}
-                <div className="bg-white rounded-2xl border border-border p-6">
+                {/* Register Option - only for guests */}
+                {isLoggedIn && (
+                  <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-green-600 shrink-0" />
+                    <p className="text-sm text-green-700 font-medium">You&apos;re signed in — your order will be linked to your account automatically.</p>
+                  </div>
+                )}
+                {!isLoggedIn && <div className="bg-white rounded-2xl border border-border p-6">
                   <div className="flex items-center gap-3 mb-4">
                     <UserPlus className="w-5 h-5 text-accent" />
                     <h2 className="text-lg font-bold text-text">Create an Account?</h2>
@@ -669,7 +699,7 @@ export default function CheckoutPage() {
                       </div>
                     </motion.div>
                   )}
-                </div>
+                </div>}
 
                 <div className="flex justify-end">
                   <Button onClick={() => goToStep(2)} size="lg" className="rounded-xl">

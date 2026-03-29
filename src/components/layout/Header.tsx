@@ -177,8 +177,8 @@ export default function Header() {
             >
               <User className="w-5 h-5 shrink-0" />
               {mounted && authUser && (
-                <span className="text-sm font-medium text-text hidden md:block max-w-[90px] truncate">
-                  {authUser.name?.split(" ")[0] || authUser.email?.split("@")[0]}
+                <span className="text-sm font-medium text-text hidden md:block max-w-[130px] truncate">
+                  Welcome! {authUser.name?.split(" ")[0] || authUser.email?.split("@")[0]}
                 </span>
               )}
             </Link>
