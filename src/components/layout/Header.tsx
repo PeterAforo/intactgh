@@ -24,6 +24,27 @@ import {
   Wifi,
   Printer,
   Gift,
+  Monitor,
+  Network,
+  Music,
+  Camera,
+  Zap,
+  Watch,
+  Mic,
+  Mouse,
+  HardDrive,
+  Server,
+  Wind,
+  Sparkles,
+  Package,
+  Cpu,
+  Volume2,
+  Radio,
+  Tablet,
+  Fan,
+  Home,
+  Layers,
+  FolderTree,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,16 +57,17 @@ import { useRouter } from "next/navigation";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Cat = any;
 
-const iconMap: Record<string, React.ReactNode> = {
-  Smartphone: <Smartphone className="w-5 h-5" />,
-  Laptop: <Laptop className="w-5 h-5" />,
-  Tv: <Tv className="w-5 h-5" />,
-  Refrigerator: <Gift className="w-5 h-5" />,
-  Headphones: <Headphones className="w-5 h-5" />,
-  Gamepad2: <Gamepad2 className="w-5 h-5" />,
-  Wifi: <Wifi className="w-5 h-5" />,
-  Printer: <Printer className="w-5 h-5" />,
+const ICON_MAP: Record<string, React.ElementType> = {
+  Tv, Smartphone, Laptop, Monitor, Printer, Network, Headphones, Music,
+  Camera, Gamepad2, Gift, Zap, Wifi, Watch, Mic, Mouse,
+  HardDrive, Server, Wind, Sparkles, Package, Cpu,
+  Volume2, Radio, Tablet, Fan, Home, Layers,
 };
+
+function CatIcon({ name, className = "w-5 h-5" }: { name?: string | null; className?: string }) {
+  const Icon = name ? (ICON_MAP[name] ?? FolderTree) : FolderTree;
+  return <Icon className={className} />;
+}
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -269,7 +291,7 @@ export default function Header() {
                             hoveredCat?.id === cat.id ? "bg-surface" : ""
                           }`}
                         >
-                          <span className="text-accent">{iconMap[cat.icon] || <Gift className="w-5 h-5" />}</span>
+                          <span className="text-accent"><CatIcon name={cat.icon} /></span>
                           <span className="font-medium text-sm flex-1">{cat.name}</span>
                           {cat.children?.length > 0 ? (
                             <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
@@ -398,7 +420,7 @@ export default function Header() {
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-surface transition-colors"
                       >
-                        <span className="text-accent">{iconMap[cat.icon] || <Gift className="w-5 h-5" />}</span>
+                        <span className="text-accent"><CatIcon name={cat.icon} /></span>
                         <span className="text-sm font-medium">{cat.name}</span>
                       </Link>
                       {cat.children?.map((sub: Cat) => (
