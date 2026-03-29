@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Search, Edit, Trash2, Eye, Filter,
+  Plus, Search, Edit, Trash2, Eye,
   Download, Upload, CheckSquare, X, ChevronLeft, ChevronRight,
-  AlertTriangle, RefreshCw,
+  AlertTriangle, RefreshCw, Copy, Check, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,11 +44,27 @@ export default function AdminProductsPage() {
   const [importing, setImporting] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
 
-  // Categories for filter dropdown
+  // Categories for filter dropdown + import lookup
   const [categories, setCategories] = useState<Any[]>([]);
+  const [showCatLookup, setShowCatLookup] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/admin/categories").then(r => r.json()).then(d => d.categories && setCategories(d.categories)).catch(() => {});
   }, []);
+
+  // Flat list: all categories + all subcategories
+  const allCategoriesFlat: Any[] = [
+    ...categories.filter((c: Any) => !c.parentId),
+    ...categories.flatMap((c: Any) => (c.children ?? []).map((ch: Any) => ({ ...ch, _parentName: c.name }))),
+  ];
+
+  const copyId = (id: string) => {
+    navigator.clipboard.writeText(id).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 1800);
+    });
+  };
 
   const fetchProducts = useCallback(() => {
     setLoading(true);
@@ -155,6 +171,18 @@ export default function AdminProductsPage() {
     URL.revokeObjectURL(url);
   };
 
+  // ── Download CSV template ────────────────────────────────────────────────
+  const handleDownloadTemplate = () => {
+    const headers = ["name", "description", "price", "comparePrice", "costPrice", "sku", "stock", "status", "tags", "categoryId", "brandId"];
+    const example = ["Example Product", "Product description here", "299.99", "399.99", "199.99", "", "10", "active", "electronics,gadget", allCategoriesFlat[0]?.id || "CATEGORY_ID_HERE", ""];
+    const csv = [headers, example].map(r => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = "products-import-template.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // ── Import CSV ───────────────────────────────────────────────────────────
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,29 +196,55 @@ export default function AdminProductsPage() {
         const i = headers.indexOf(key);
         return i >= 0 ? row[i]?.replace(/^"|"$/g, "").trim() : "";
       };
+
+      // Build name→id map for all categories + subcategories
+      const catNameMap: Record<string, string> = {};
+      allCategoriesFlat.forEach((c: Any) => {
+        catNameMap[c.name.toLowerCase().trim()] = c.id;
+      });
+
       const rows = lines.slice(1);
-      let created = 0; let failed = 0;
+      let created = 0; let failed = 0; let skipped = 0;
       for (const line of rows) {
         const cols = line.split(",");
         const name = getCol(cols, "name"); if (!name) continue;
+
+        // Resolve categoryId: try direct ID first, then name lookup
+        let categoryId = getCol(cols, "categoryid");
+        if (!categoryId) {
+          const catName = getCol(cols, "category").toLowerCase().trim();
+          categoryId = catNameMap[catName] || "";
+        }
+        // Also try matching by ID existence if it's a subcategory
+        if (categoryId && !allCategoriesFlat.find((c: Any) => c.id === categoryId)) {
+          // Try name match as last resort
+          const fallback = catNameMap[categoryId.toLowerCase().trim()];
+          if (fallback) categoryId = fallback;
+        }
+
+        if (!categoryId) { skipped++; continue; }
+
         const body = {
-          name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          name, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now().toString(36),
           description: getCol(cols, "description") || name,
           price: getCol(cols, "price") || "0",
           comparePrice: getCol(cols, "compareprice") || "",
+          costPrice: getCol(cols, "costprice") || "",
           sku: getCol(cols, "sku") || "",
           stock: getCol(cols, "stock") || "0",
           status: getCol(cols, "status") || "active",
           tags: getCol(cols, "tags") || "",
-          categoryId: getCol(cols, "categoryid") || "",
+          categoryId,
           brandId: getCol(cols, "brandid") || "",
           images: [],
         };
-        if (!body.categoryId) { failed++; continue; }
         const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
         res.ok ? created++ : failed++;
       }
-      toast.success(`Imported ${created} products${failed ? `, ${failed} skipped (missing categoryId)` : ""}`);
+      const msg = [`Imported ${created}`];
+      if (failed) msg.push(`${failed} failed`);
+      if (skipped) msg.push(`${skipped} skipped (no category match)`);
+      toast.success(msg.join(" · "));
       setShowImport(false); fetchProducts();
     } catch { toast.error("Import failed — check CSV format"); }
     finally { setImporting(false); if (importFileRef.current) importFileRef.current.value = ""; }
@@ -404,28 +458,91 @@ export default function AdminProductsPage() {
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
             onClick={(e) => e.target === e.currentTarget && setShowImport(false)}>
             <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 10 }}
-              className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+              className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-text text-lg">Import Products</h2>
+                <h2 className="font-bold text-text text-lg">Import Products via CSV</h2>
                 <button onClick={() => setShowImport(false)} className="p-1.5 hover:bg-surface rounded-lg"><X className="w-4 h-4" /></button>
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex gap-2 text-sm text-amber-800">
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                <div>
-                  CSV must have columns: <strong>name, description, price, comparePrice, sku, stock, status, tags, categoryId, brandId</strong>.
-                  <br />Get <code>categoryId</code> from the Categories page.
-                </div>
+
+              {/* CSV columns info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-3 text-sm text-blue-800">
+                <p className="font-semibold mb-1">Required CSV columns:</p>
+                <p className="font-mono text-xs leading-relaxed break-all">
+                  name, description, price, comparePrice, costPrice, sku, stock, status, tags, <strong>categoryId</strong> or <strong>category</strong>, brandId
+                </p>
+                <p className="text-xs mt-2 text-blue-700">
+                  💡 Use <strong>categoryId</strong> (ID from table below) <em>or</em> <strong>category</strong> (exact category name — works for subcategories too).
+                </p>
               </div>
-              <input ref={importFileRef} type="file" accept=".csv" onChange={handleImportFile} className="hidden" />
-              <Button onClick={() => importFileRef.current?.click()} disabled={importing} className="w-full rounded-xl">
-                {importing ? (
-                  <><svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Importing…</>
-                ) : (
-                  <><Upload className="w-4 h-4 mr-2" />Choose CSV File</>
-                )}
-              </Button>
-              <p className="text-xs text-text-muted text-center mt-3">
-                Products with missing categoryId will be skipped.
+
+              {/* Category lookup */}
+              <button onClick={() => setShowCatLookup(!showCatLookup)}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-border hover:bg-surface/50 transition-colors text-sm font-medium text-text mb-3">
+                <span>📂 Category &amp; Subcategory ID Lookup</span>
+                {showCatLookup ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              {showCatLookup && (
+                <div className="mb-3 border border-border rounded-xl overflow-hidden">
+                  <div className="bg-surface/50 px-3 py-2 text-xs font-semibold text-text-muted uppercase tracking-wider border-b border-border">Category Name → ID</div>
+                  <div className="max-h-52 overflow-y-auto divide-y divide-border">
+                    {categories.filter((c: Any) => !c.parentId).map((cat: Any) => (
+                      <React.Fragment key={cat.id}>
+                        {/* Parent row */}
+                        <div className="flex items-center justify-between px-3 py-2 bg-white">
+                          <div>
+                            <span className="text-xs font-semibold text-text">{cat.name}</span>
+                            <span className="ml-2 text-[10px] text-text-muted bg-surface px-1.5 py-0.5 rounded">parent</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-mono text-text-muted truncate max-w-[120px]">{cat.id}</span>
+                            <button onClick={() => copyId(cat.id)}
+                              className="p-1 hover:bg-surface rounded-md text-text-muted hover:text-accent transition-colors">
+                              {copiedId === cat.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        </div>
+                        {/* Subcategory rows */}
+                        {(cat.children ?? []).map((sub: Any) => (
+                          <div key={sub.id} className="flex items-center justify-between px-3 py-2 bg-surface/30">
+                            <div>
+                              <span className="text-[10px] text-text-muted mr-1">↳</span>
+                              <span className="text-xs text-text">{sub.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-mono text-text-muted truncate max-w-[120px]">{sub.id}</span>
+                              <button onClick={() => copyId(sub.id)}
+                                className="p-1 hover:bg-surface rounded-md text-text-muted hover:text-accent transition-colors">
+                                {copiedId === sub.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                    {categories.length === 0 && (
+                      <div className="px-3 py-4 text-xs text-text-muted text-center">No categories found</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 mb-3">
+                <button onClick={handleDownloadTemplate}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-border hover:bg-surface/50 text-sm font-medium text-text transition-colors">
+                  <Download className="w-4 h-4" />Download Template
+                </button>
+                <input ref={importFileRef} type="file" accept=".csv" onChange={handleImportFile} className="hidden" />
+                <Button onClick={() => importFileRef.current?.click()} disabled={importing} className="flex-1 rounded-xl">
+                  {importing ? (
+                    <><svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Importing…</>
+                  ) : (
+                    <><Upload className="w-4 h-4 mr-2" />Choose CSV File</>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-text-muted text-center">
+                Rows where category cannot be matched by ID or name will be skipped.
               </p>
             </motion.div>
           </motion.div>
