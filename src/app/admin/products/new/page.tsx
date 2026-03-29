@@ -479,9 +479,23 @@ export default function NewProductPage() {
                   className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent"
                 >
                   <option value="">Select category</option>
-                  {categories.map((cat: Any) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
+                  {categories
+                    .filter((c: Any) => !c.parentId)
+                    .map((cat: Any) =>
+                      cat.children?.length > 0 ? (
+                        <optgroup key={cat.id} label={cat.name}>
+                          <option value={cat.id}>All {cat.name}</option>
+                          {cat.children.map((sub: Any) => (
+                            <option key={sub.id} value={sub.id}>
+                              &nbsp;&nbsp;↳ {sub.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      )
+                    )
+                  }
                 </select>
               </div>
               <div>
