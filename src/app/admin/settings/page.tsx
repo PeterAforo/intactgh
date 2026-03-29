@@ -19,6 +19,10 @@ export default function AdminSettingsPage() {
   const [notificationEmail, setNotificationEmail] = useState("sales@intactghana.com");
   const [notificationSmsNumber, setNotificationSmsNumber] = useState("");
   const [mnotifySenderId, setMnotifySenderId] = useState("IntactGH");
+  const [primaryColor, setPrimaryColor] = useState("#0a0a0a");
+  const [accentColor, setAccentColor] = useState("#0052cc");
+  const [infoColor, setInfoColor] = useState("#0052cc");
+  const [successColor, setSuccessColor] = useState("#10b981");
 
   useEffect(() => {
     fetch("/api/admin/settings").then(r => r.json()).then(d => {
@@ -34,6 +38,10 @@ export default function AdminSettingsPage() {
         if (s.notification_email) setNotificationEmail(s.notification_email);
         if (s.notification_sms_number) setNotificationSmsNumber(s.notification_sms_number);
         if (s.mnotify_sender_id) setMnotifySenderId(s.mnotify_sender_id);
+        if (s.primaryColor) setPrimaryColor(s.primaryColor);
+        if (s.accentColor) setAccentColor(s.accentColor);
+        if (s.infoColor) setInfoColor(s.infoColor);
+        if (s.successColor) setSuccessColor(s.successColor);
       }
     }).catch(() => {});
   }, []);
@@ -43,7 +51,7 @@ export default function AdminSettingsPage() {
     try {
       const res = await fetch("/api/admin/settings", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeName, tagline, email, phone, address, currency, freeShippingMin, notification_email: notificationEmail, notification_sms_number: notificationSmsNumber, mnotify_sender_id: mnotifySenderId }),
+        body: JSON.stringify({ storeName, tagline, email, phone, address, currency, freeShippingMin, notification_email: notificationEmail, notification_sms_number: notificationSmsNumber, mnotify_sender_id: mnotifySenderId, primaryColor, accentColor, infoColor, successColor }),
       });
       if (!res.ok) throw new Error("Failed to save");
       toast.success("Settings saved successfully");
@@ -169,16 +177,25 @@ export default function AdminSettingsPage() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Primary Color", value: "#0a0a0a" },
-            { label: "Accent Color", value: "#0052cc" },
-            { label: "Info/Highlight", value: "#0052cc" },
-            { label: "Success Color", value: "#10b981" },
+            { label: "Primary Color", value: primaryColor, set: setPrimaryColor },
+            { label: "Accent Color", value: accentColor, set: setAccentColor },
+            { label: "Info/Highlight", value: infoColor, set: setInfoColor },
+            { label: "Success Color", value: successColor, set: setSuccessColor },
           ].map((color) => (
             <div key={color.label}>
               <label className="text-sm font-medium text-text block mb-1.5">{color.label}</label>
               <div className="flex items-center gap-2">
-                <input type="color" defaultValue={color.value} className="w-10 h-10 rounded-lg border border-border cursor-pointer" />
-                <Input defaultValue={color.value} className="rounded-lg font-mono text-xs" />
+                <input
+                  type="color"
+                  value={color.value}
+                  onChange={(e) => color.set(e.target.value)}
+                  className="w-10 h-10 rounded-lg border border-border cursor-pointer"
+                />
+                <Input
+                  value={color.value}
+                  onChange={(e) => color.set(e.target.value)}
+                  className="rounded-lg font-mono text-xs"
+                />
               </div>
             </div>
           ))}
