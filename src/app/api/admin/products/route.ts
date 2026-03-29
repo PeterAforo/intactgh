@@ -45,24 +45,29 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      name, slug, description, price, comparePrice, sku, stock,
-      categoryId, brandId, featured, isNew, onSale, tags, images, specs,
+      name, slug, description, price, comparePrice, costPrice, sku, stock,
+      categoryId, brandId, featured, isNew, onSale, tags, images, specs, videoUrl,
     } = body;
 
     if (!name || !slug || !description || !price || !categoryId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // Auto-generate SKU if not provided
+    const finalSku = sku || `${name.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "X")}-${Date.now().toString(36).toUpperCase()}`;
+
     const product = await prisma.product.create({
       data: {
         name, slug, description,
         price: parseFloat(price),
         comparePrice: comparePrice ? parseFloat(comparePrice) : null,
-        sku: sku || null,
+        costPrice: costPrice ? parseFloat(costPrice) : null,
+        sku: finalSku,
         stock: parseInt(stock) || 0,
         categoryId, brandId: brandId || null,
         featured: !!featured, isNew: !!isNew, onSale: !!onSale,
         tags: tags || null, specs: specs || null,
+        videoUrl: videoUrl || null,
         images: images?.length ? {
           create: images.map((img: { url: string; alt?: string }, idx: number) => ({
             url: img.url, alt: img.alt || null, order: idx,

@@ -86,6 +86,8 @@ model Product {
   reviewCount   Int            @default(0)
   specs         String?
   tags          String?
+  costPrice     Float?
+  videoUrl      String?
   status        String         @default("active")
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

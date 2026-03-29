@@ -1,20 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  ArrowLeft,
-  Upload,
-  Camera,
-  Sparkles,
-  X,
-  Plus,
-  Save,
-  Eye,
-  Wand2,
+  ArrowLeft, Upload, Camera, Sparkles, X, Plus, Save,
+  Wand2, Tag, RefreshCw, TrendingUp, TrendingDown,
+  Video, Crop, Maximize2, ScanLine, Layers, Zap, ChevronDown, ChevronUp,
+  AlertCircle, CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,26 +18,148 @@ import toast from "react-hot-toast";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
+interface SpecRow { key: string; value: string; }
+interface AiOptions {
+  removeBg: boolean; crop: boolean; straighten: boolean;
+  proportional: boolean; upscale: boolean;
+}
+
+function applyCloudinaryTransforms(url: string, opts: AiOptions): string {
+  if (!url.includes("res.cloudinary.com")) return url;
+  const t: string[] = [];
+  if (opts.removeBg) t.push("e_background_removal");
+  if (opts.upscale) t.push("e_upscale");
+  if (opts.crop) t.push("c_fill,ar_1:1");
+  else if (opts.proportional) t.push("c_fit,w_900,h_900");
+  if (opts.straighten) t.push("e_straighten");
+  if (!t.length) return url;
+  return url.replace("/upload/", `/upload/${t.join("/")}/`);
+}
+
+function generateSKU(name: string): string {
+  const prefix = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, "")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((w) => w.slice(0, 2))
+    .join("");
+  const suffix = Date.now().toString(36).toUpperCase().slice(-4);
+  return `${prefix}-${suffix}`;
+}
+
+function generateTags(name: string, categoryName: string, brandName: string): string {
+  const stopWords = new Set(["the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of", "with"]);
+  const words = [name, categoryName, brandName]
+    .join(" ").toLowerCase()
+    .replace(/[^a-z0-9 ]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stopWords.has(w));
+  return [...new Set(words)].slice(0, 8).join(", ");
+}
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?/]+)/);
+  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+}
+
+function ProfitBadge({ cost, price }: { cost: string; price: string }) {
+  const c = parseFloat(cost); const p = parseFloat(price);
+  if (!c || !p || isNaN(c) || isNaN(p)) return null;
+  const profit = p - c;
+  const margin = ((profit / p) * 100).toFixed(1);
+  const isProfit = profit >= 0;
+  return (
+    <div className={`flex items-center gap-3 mt-3 p-3 rounded-xl text-sm ${isProfit ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
+      {isProfit ? <TrendingUp className="w-4 h-4 text-green-600 shrink-0" /> : <TrendingDown className="w-4 h-4 text-red-600 shrink-0" />}
+      <div className="flex-1">
+        <span className={`font-semibold ${isProfit ? "text-green-700" : "text-red-700"}`}>
+          {isProfit ? "Profit" : "Loss"}: GH₵{Math.abs(profit).toFixed(2)} &nbsp;|&nbsp; Margin: {Math.abs(parseFloat(margin))}%
+        </span>
+        {isProfit && parseFloat(margin) > 30 && (
+          <p className="text-green-600 text-xs mt-0.5">💡 Good margin — discount up to {(parseFloat(margin) - 15).toFixed(0)}% safely</p>
+        )}
+        {isProfit && parseFloat(margin) <= 30 && parseFloat(margin) > 0 && (
+          <p className="text-amber-600 text-xs mt-0.5">⚠️ Thin margin — max suggested discount: {(parseFloat(margin) / 2).toFixed(0)}%</p>
+        )}
+        {!isProfit && <p className="text-red-600 text-xs mt-0.5">❌ Selling below cost — review pricing</p>}
+      </div>
+    </div>
+  );
+}
+
 export default function NewProductPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+
+  // ── Basic ─────────────────────────────────────────────────────────────────
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
+  const [specs, setSpecs] = useState<SpecRow[]>([{ key: "", value: "" }]);
+  const [activeTab, setActiveTab] = useState<"description" | "specs">("description");
+
+  // ── Pricing ───────────────────────────────────────────────────────────────
+  const [costPrice, setCostPrice] = useState("");
   const [price, setPrice] = useState("");
   const [comparePrice, setComparePrice] = useState("");
   const [sku, setSku] = useState("");
   const [stock, setStock] = useState("");
+  const [status, setStatus] = useState("active");
+
+  // ── Media ─────────────────────────────────────────────────────────────────
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingCount, setUploadingCount] = useState(0);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [cameraMode, setCameraMode] = useState(false);
+
+  // ── AI Image Enhancement ──────────────────────────────────────────────────
+  const [showAiPanel, setShowAiPanel] = useState(false);
+  const [aiOptions, setAiOptions] = useState<AiOptions>({
+    removeBg: false, crop: false, straighten: false, proportional: false, upscale: false,
+  });
+  const [aiApplying, setAiApplying] = useState(false);
+  const [aiDone, setAiDone] = useState(false);
+  const [selectedImageIdx, setSelectedImageIdx] = useState<number>(0);
+
+  // ── Organization ─────────────────────────────────────────────────────────
   const [categoryId, setCategoryId] = useState("");
   const [brandId, setBrandId] = useState("");
   const [tags, setTags] = useState("");
   const [featured, setFeatured] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [onSale, setOnSale] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
-  const [uploadingCount, setUploadingCount] = useState(0);
+
+  // ── Refs ─────────────────────────────────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // ── Remote data ───────────────────────────────────────────────────────────
   const [categories, setCategories] = useState<Any[]>([]);
   const [brands, setBrands] = useState<Any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/categories").then(r => r.json()).then(d => d.categories && setCategories(d.categories)).catch(() => {});
+    fetch("/api/admin/brands").then(r => r.json()).then(d => d.brands && setBrands(d.brands)).catch(() => {});
+  }, []);
+
+  // ── Auto-generate SKU when name changes (user can override) ───────────────
+  useEffect(() => {
+    if (name) setSku(generateSKU(name));
+  }, [name]);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const selectedCatName = categories.find((c: Any) => c.id === categoryId)?.name
+    ?? categories.flatMap((c: Any) => c.children ?? []).find((c: Any) => c.id === categoryId)?.name ?? "";
+  const selectedBrandName = brands.find((b: Any) => b.id === brandId)?.name ?? "";
+
+  const specsToJson = useCallback(() => {
+    const obj: Record<string, string> = {};
+    specs.forEach(({ key, value }) => { if (key.trim()) obj[key.trim()] = value; });
+    return Object.keys(obj).length ? JSON.stringify(obj) : null;
+  }, [specs]);
 
   const handleSave = async () => {
     if (!name || !price || !categoryId) { toast.error("Name, price, and category are required"); return; }
@@ -51,8 +168,10 @@ export default function NewProductPage() {
       const finalSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "");
       const imgList = images.map((url) => ({ url }));
       const body = {
-        name, slug: finalSlug, description, price, comparePrice, sku, stock,
-        categoryId, brandId, featured, isNew, onSale, tags, images: imgList,
+        name, slug: finalSlug, description, price, comparePrice, costPrice,
+        sku, stock, categoryId, brandId, featured, isNew, onSale,
+        tags, images: imgList, specs: specsToJson(),
+        videoUrl: videoUrl || null, status,
       };
       const res = await fetch("/api/admin/products", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -65,21 +184,9 @@ export default function NewProductPage() {
     finally { setSaving(false); }
   };
 
-  useEffect(() => {
-    fetch("/api/admin/categories").then(r => r.json()).then(d => d.categories && setCategories(d.categories)).catch(() => {});
-    fetch("/api/admin/brands").then(r => r.json()).then(d => d.brands && setBrands(d.brands)).catch(() => {});
-  }, []);
-  const [showAiProcessor, setShowAiProcessor] = useState(false);
-  const [aiProcessing, setAiProcessing] = useState(false);
-  const [aiProcessed, setAiProcessed] = useState(false);
-  const [cameraMode, setCameraMode] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
+  // ── Upload helpers ────────────────────────────────────────────────────────
   const uploadToCloudinary = async (file: File) => {
-    const fd = new FormData();
-    fd.append("file", file);
+    const fd = new FormData(); fd.append("file", file);
     const res = await fetch("/api/upload", { method: "POST", body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Upload failed");
@@ -91,166 +198,147 @@ export default function NewProductPage() {
     if (!files || files.length === 0) return;
     const fileArr = Array.from(files);
     setUploadingCount((n) => n + fileArr.length);
-    await Promise.allSettled(
-      fileArr.map(async (file) => {
-        try {
-          const url = await uploadToCloudinary(file);
-          setImages((prev) => [...prev, url]);
-        } catch (err: Any) {
-          toast.error(err.message || "Image upload failed");
-        } finally {
-          setUploadingCount((n) => Math.max(0, n - 1));
-        }
-      })
-    );
+    await Promise.allSettled(fileArr.map(async (file) => {
+      try { const url = await uploadToCloudinary(file); setImages((prev) => [...prev, url]); }
+      catch (err: Any) { toast.error(err.message || "Upload failed"); }
+      finally { setUploadingCount((n) => Math.max(0, n - 1)); }
+    }));
     e.target.value = "";
   };
 
-  const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-  };
+  const removeImage = (index: number) => setImages((prev) => prev.filter((_, i) => i !== index));
 
   const startCamera = async () => {
     setCameraMode(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      console.error("Camera access denied:", err);
-      setCameraMode(false);
-    }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch { setCameraMode(false); }
   };
 
   const capturePhoto = async () => {
-    if (videoRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext("2d");
-      ctx?.drawImage(video, 0, 0);
-
-      const stream = video.srcObject as MediaStream;
-      stream?.getTracks().forEach((track) => track.stop());
-      setCameraMode(false);
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
-        setUploadingCount((n) => n + 1);
-        try {
-          const url = await uploadToCloudinary(file);
-          setImages((prev) => [...prev, url]);
-        } catch (err: Any) {
-          toast.error(err.message || "Camera upload failed");
-        } finally {
-          setUploadingCount((n) => Math.max(0, n - 1));
-        }
-      }, "image/jpeg", 0.9);
-    }
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current; const video = videoRef.current;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    (video.srcObject as MediaStream)?.getTracks().forEach((t) => t.stop());
+    setCameraMode(false);
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+      setUploadingCount((n) => n + 1);
+      try { const url = await uploadToCloudinary(file); setImages((prev) => [...prev, url]); }
+      catch (err: Any) { toast.error(err.message || "Camera upload failed"); }
+      finally { setUploadingCount((n) => Math.max(0, n - 1)); }
+    }, "image/jpeg", 0.9);
   };
 
   const stopCamera = () => {
-    if (videoRef.current) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream?.getTracks().forEach((track) => track.stop());
-    }
+    (videoRef.current?.srcObject as MediaStream)?.getTracks().forEach((t) => t.stop());
     setCameraMode(false);
   };
 
-  const processWithAI = () => {
+  // ── AI enhance: apply Cloudinary transforms to the selected image ─────────
+  const applyAiEnhancement = () => {
     if (images.length === 0) return;
-    setAiProcessing(true);
-    setShowAiProcessor(true);
-
+    const anySelected = Object.values(aiOptions).some(Boolean);
+    if (!anySelected) { toast.error("Select at least one enhancement option"); return; }
+    setAiApplying(true);
     setTimeout(() => {
-      setAiProcessing(false);
-      setAiProcessed(true);
-      setTimeout(() => {
-        setShowAiProcessor(false);
-        setAiProcessed(false);
-      }, 3000);
-    }, 3000);
+      setImages((prev) => {
+        const updated = [...prev];
+        updated[selectedImageIdx] = applyCloudinaryTransforms(updated[selectedImageIdx], aiOptions);
+        return updated;
+      });
+      setAiApplying(false);
+      setAiDone(true);
+      setTimeout(() => { setAiDone(false); setShowAiPanel(false); }, 2500);
+    }, 1800);
   };
 
+  const embedUrl = videoUrl ? getYouTubeEmbedUrl(videoUrl) : null;
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/admin/products">
-            <Button variant="ghost" size="icon" className="rounded-lg">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+            <Button variant="ghost" size="icon" className="rounded-lg"><ArrowLeft className="w-5 h-5" /></Button>
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-text">Add New Product</h1>
             <p className="text-text-muted text-sm">Create a new product listing</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={handleSave} disabled={saving} className="rounded-lg">
-            <Save className="w-4 h-4 mr-2" />
-            {saving ? "Saving..." : "Save Product"}
-          </Button>
-        </div>
+        <Button onClick={handleSave} disabled={saving} className="rounded-lg">
+          <Save className="w-4 h-4 mr-2" />{saving ? "Saving..." : "Save Product"}
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content */}
+        {/* ── Left Column ─────────────────────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Basic Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl border border-border p-6"
-          >
-            <h2 className="font-bold text-text mb-4">Basic Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-text block mb-1.5">Product Name</label>
-                <Input
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "")); }}
-                  placeholder="e.g. Samsung Galaxy S24 Ultra 256GB"
-                  className="rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-text block mb-1.5">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Write a detailed product description..."
-                  rows={5}
-                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
-                />
-              </div>
+
+          {/* Basic Info + Specs tabs */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-2xl border border-border p-6">
+            <div>
+              <label className="text-sm font-medium text-text block mb-1.5">Product Name</label>
+              <Input
+                value={name}
+                onChange={(e) => { setName(e.target.value); setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "")); }}
+                placeholder="e.g. Samsung Galaxy S24 Ultra 256GB"
+                className="rounded-lg mb-4"
+              />
             </div>
+            {/* Tab switcher */}
+            <div className="flex border-b border-border mb-4">
+              {(["description", "specs"] as const).map((tab) => (
+                <button key={tab} onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors capitalize ${activeTab === tab ? "border-accent text-accent" : "border-transparent text-text-muted hover:text-text"}`}>
+                  {tab === "specs" ? "Specifications" : "Description"}
+                </button>
+              ))}
+            </div>
+            {activeTab === "description" && (
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                placeholder="Write a detailed product description..." rows={6}
+                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+            )}
+            {activeTab === "specs" && (
+              <div className="space-y-2">
+                <p className="text-xs text-text-muted mb-2">Add key specifications shown in the product page Specifications tab (e.g. RAM → 16GB, Battery → 5000mAh)</p>
+                {specs.map((row, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <Input value={row.key} onChange={(e) => setSpecs((p) => { const n = [...p]; n[i] = { ...n[i], key: e.target.value }; return n; })}
+                      placeholder="e.g. RAM" className="rounded-lg flex-1 text-sm" />
+                    <Input value={row.value} onChange={(e) => setSpecs((p) => { const n = [...p]; n[i] = { ...n[i], value: e.target.value }; return n; })}
+                      placeholder="e.g. 16GB" className="rounded-lg flex-1 text-sm" />
+                    <button onClick={() => setSpecs((p) => p.filter((_, j) => j !== i))} disabled={specs.length === 1}
+                      className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 disabled:opacity-30">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => setSpecs((p) => [...p, { key: "", value: "" }])} className="rounded-lg mt-1">
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Spec
+                </Button>
+              </div>
+            )}
           </motion.div>
 
-          {/* Images */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl border border-border p-6"
-          >
+          {/* Product Media */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+            className="bg-white rounded-2xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-text">Product Images</h2>
+              <h2 className="font-bold text-text">Product Media</h2>
               {images.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={processWithAI}
-                  className="rounded-lg text-accent border-accent"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  AI Enhance Images
+                <Button variant="outline" size="sm" onClick={() => setShowAiPanel(!showAiPanel)}
+                  className="rounded-lg text-accent border-accent">
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  AI Enhance
+                  {showAiPanel ? <ChevronUp className="w-3.5 h-3.5 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 ml-1" />}
                 </Button>
               )}
             </div>
@@ -258,67 +346,78 @@ export default function NewProductPage() {
             {/* Camera Mode */}
             {cameraMode && (
               <div className="relative mb-4 rounded-xl overflow-hidden bg-black">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full aspect-[4/3] object-cover"
-                />
+                <video ref={videoRef} autoPlay playsInline className="w-full aspect-[4/3] object-cover" />
                 <canvas ref={canvasRef} className="hidden" />
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
-                  <Button onClick={capturePhoto} size="lg" className="rounded-full w-14 h-14 p-0">
-                    <Camera className="w-6 h-6" />
-                  </Button>
-                  <Button onClick={stopCamera} variant="outline" size="sm" className="rounded-full bg-white/20 border-white text-white">
-                    <X className="w-4 h-4 mr-1" />
-                    Cancel
-                  </Button>
+                  <Button onClick={capturePhoto} size="lg" className="rounded-full w-14 h-14 p-0"><Camera className="w-6 h-6" /></Button>
+                  <Button onClick={stopCamera} variant="outline" size="sm" className="rounded-full bg-white/20 border-white text-white"><X className="w-4 h-4 mr-1" />Cancel</Button>
                 </div>
               </div>
             )}
 
-            {/* AI Processing Overlay */}
-            {showAiProcessor && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mb-4 bg-gradient-to-r from-primary to-accent rounded-xl p-6 text-white text-center"
-              >
-                {aiProcessing ? (
-                  <div>
-                    <Wand2 className="w-10 h-10 mx-auto mb-3 animate-spin" />
-                    <p className="font-bold text-lg">AI is processing your images...</p>
-                    <p className="text-white/70 text-sm mt-1">
-                      Removing background, adjusting lighting, and optimizing for web display
-                    </p>
-                    <div className="w-full bg-white/20 rounded-full h-2 mt-4 overflow-hidden">
-                      <motion.div
-                        initial={{ width: "0%" }}
-                        animate={{ width: "100%" }}
-                        transition={{ duration: 3 }}
-                        className="bg-gold h-full rounded-full"
-                      />
+            {/* AI Panel */}
+            <AnimatePresence>
+              {showAiPanel && images.length > 0 && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }} className="mb-4 overflow-hidden">
+                  <div className="bg-gradient-to-br from-[#0041a8]/5 to-[#0052cc]/10 border border-[#0052cc]/20 rounded-xl p-4">
+                    <p className="text-sm font-semibold text-text mb-1">AI Image Enhancement</p>
+                    <p className="text-xs text-text-muted mb-3">Select enhancements to apply via Cloudinary AI:</p>
+
+                    {/* Image selector */}
+                    <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+                      {images.map((img, i) => (
+                        <button key={i} onClick={() => setSelectedImageIdx(i)}
+                          className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIdx === i ? "border-accent" : "border-border"}`}>
+                          <Image src={img} alt="" fill={false} width={56} height={56} className="object-cover w-full h-full" />
+                        </button>
+                      ))}
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <Sparkles className="w-10 h-10 mx-auto mb-3 text-gold" />
-                    <p className="font-bold text-lg">Images Enhanced Successfully!</p>
-                    <p className="text-white/70 text-sm mt-1">
-                      Background removed, lighting adjusted, and images optimized
+
+                    {/* Options */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                      {([
+                        { key: "removeBg", label: "Remove Background", icon: <Layers className="w-4 h-4" /> },
+                        { key: "crop", label: "Crop to Square", icon: <Crop className="w-4 h-4" /> },
+                        { key: "proportional", label: "Proportional Fit", icon: <Maximize2 className="w-4 h-4" /> },
+                        { key: "straighten", label: "Straighten", icon: <ScanLine className="w-4 h-4" /> },
+                        { key: "upscale", label: "Upscale Quality", icon: <Zap className="w-4 h-4" /> },
+                      ] as { key: keyof AiOptions; label: string; icon: React.ReactNode }[]).map(({ key, label, icon }) => (
+                        <label key={key} className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all text-xs font-medium select-none
+                          ${aiOptions[key] ? "bg-accent/10 border-accent text-accent" : "bg-white border-border text-text hover:border-accent/50"}`}>
+                          <input type="checkbox" checked={aiOptions[key]}
+                            onChange={(e) => setAiOptions((p) => ({ ...p, [key]: e.target.checked }))}
+                            className="sr-only" />
+                          {icon}{label}
+                          {aiOptions[key] && <CheckCircle2 className="w-3.5 h-3.5 ml-auto" />}
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button onClick={applyAiEnhancement} disabled={aiApplying}
+                        className="rounded-lg bg-accent hover:bg-accent/90 text-white text-sm">
+                        {aiApplying ? (
+                          <><svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Applying…</>
+                        ) : (
+                          <><Sparkles className="w-4 h-4 mr-2" />Apply to Image {selectedImageIdx + 1}</>
+                        )}
+                      </Button>
+                      {aiDone && <span className="text-green-600 text-sm flex items-center gap-1"><CheckCircle2 className="w-4 h-4" />Done!</span>}
+                    </div>
+                    <p className="text-[11px] text-text-muted mt-2 flex items-start gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                      Background removal &amp; upscale require the Cloudinary AI add-on to be enabled on your account.
                     </p>
                   </div>
-                )}
-              </motion.div>
-            )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Upload progress */}
             {uploadingCount > 0 && (
               <div className="mb-3 flex items-center gap-2 text-sm text-accent bg-accent/5 rounded-lg px-3 py-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                </svg>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
                 Uploading {uploadingCount} image{uploadingCount > 1 ? "s" : ""} to Cloudinary…
               </div>
             )}
@@ -326,122 +425,107 @@ export default function NewProductPage() {
             {/* Image Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               {images.map((img, i) => (
-                <div key={i} className="relative aspect-square rounded-xl overflow-hidden bg-surface border border-border group">
+                <div key={i} onClick={() => setSelectedImageIdx(i)}
+                  className={`relative aspect-square rounded-xl overflow-hidden bg-surface border-2 group cursor-pointer transition-all
+                    ${selectedImageIdx === i && showAiPanel ? "border-accent" : "border-border"}`}>
                   <Image src={img} alt={`Product ${i + 1}`} fill className="object-cover" />
-                  <button
-                    onClick={() => removeImage(i)}
-                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <X className="w-3 h-3" />
                   </button>
-                  {i === 0 && (
-                    <Badge className="absolute bottom-2 left-2 text-[10px]">Main</Badge>
-                  )}
+                  {i === 0 && <Badge className="absolute bottom-2 left-2 text-[10px]">Main</Badge>}
                 </div>
               ))}
             </div>
 
-            {/* Upload Actions */}
+            {/* Upload buttons */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1 border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-accent hover:bg-surface/50 transition-all group cursor-pointer"
-              >
-                <Upload className="w-8 h-8 mx-auto mb-2 text-text-muted group-hover:text-accent transition-colors" />
+              <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
+              <button onClick={() => fileInputRef.current?.click()}
+                className="flex-1 border-2 border-dashed border-border rounded-xl p-5 text-center hover:border-accent hover:bg-surface/50 transition-all group cursor-pointer">
+                <Upload className="w-7 h-7 mx-auto mb-2 text-text-muted group-hover:text-accent transition-colors" />
                 <p className="text-sm font-medium text-text">Upload Images</p>
-                <p className="text-xs text-text-muted mt-1">PNG, JPG up to 10MB</p>
+                <p className="text-xs text-text-muted mt-0.5">PNG, JPG up to 10MB</p>
               </button>
-              <button
-                onClick={startCamera}
-                className="flex-1 border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-accent hover:bg-surface/50 transition-all group cursor-pointer"
-              >
-                <Camera className="w-8 h-8 mx-auto mb-2 text-text-muted group-hover:text-accent transition-colors" />
+              <button onClick={startCamera}
+                className="flex-1 border-2 border-dashed border-border rounded-xl p-5 text-center hover:border-accent hover:bg-surface/50 transition-all group cursor-pointer">
+                <Camera className="w-7 h-7 mx-auto mb-2 text-text-muted group-hover:text-accent transition-colors" />
                 <p className="text-sm font-medium text-text">Take Photo</p>
-                <p className="text-xs text-text-muted mt-1">Use camera to capture product</p>
+                <p className="text-xs text-text-muted mt-0.5">Use device camera</p>
               </button>
             </div>
 
-            <div className="mt-3 bg-accent/5 rounded-lg p-3 flex items-start gap-2">
-              <Sparkles className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-              <p className="text-xs text-text-light">
-                <strong className="text-accent">AI Image Enhancement:</strong> Take a photo of your product 
-                and our AI will automatically remove the background, adjust lighting, and create a 
-                professional product image ready for your store.
-              </p>
+            {/* YouTube Video URL */}
+            <div className="mt-5 border-t border-border pt-4">
+              <label className="text-sm font-medium text-text flex items-center gap-2 mb-2">
+                <Video className="w-4 h-4 text-red-500" />
+                Product Video (YouTube)
+              </label>
+              <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                className="rounded-lg text-sm" />
+              {videoUrl && !embedUrl && (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />Invalid YouTube URL</p>
+              )}
+              {embedUrl && (
+                <div className="mt-3 rounded-xl overflow-hidden aspect-video border border-border">
+                  <iframe src={embedUrl} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                </div>
+              )}
             </div>
           </motion.div>
 
-          {/* Pricing */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl border border-border p-6"
-          >
+          {/* Pricing & Inventory */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="bg-white rounded-2xl border border-border p-6">
             <h2 className="font-bold text-text mb-4">Pricing & Inventory</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-text block mb-1.5">Price (GH₵)</label>
-                <Input
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="0.00"
-                  className="rounded-lg"
-                />
+                <label className="text-sm font-medium text-text block mb-1.5">Cost Price (GH₵) <span className="text-text-muted font-normal text-xs">— internal</span></label>
+                <Input type="number" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} placeholder="0.00" className="rounded-lg" />
               </div>
               <div>
-                <label className="text-sm font-medium text-text block mb-1.5">Compare Price (GH₵)</label>
-                <Input
-                  type="number"
-                  value={comparePrice}
-                  onChange={(e) => setComparePrice(e.target.value)}
-                  placeholder="0.00"
-                  className="rounded-lg"
-                />
+                <label className="text-sm font-medium text-text block mb-1.5">Selling Price (GH₵) <span className="text-red-500">*</span></label>
+                <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" className="rounded-lg" />
               </div>
+            </div>
+
+            {/* Live profit/loss indicator */}
+            <ProfitBadge cost={costPrice} price={price} />
+
+            <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
-                <label className="text-sm font-medium text-text block mb-1.5">SKU</label>
-                <Input
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  placeholder="e.g. SAM-S24U-256"
-                  className="rounded-lg"
-                />
+                <label className="text-sm font-medium text-text block mb-1.5">Compare Price (GH₵) <span className="text-text-muted font-normal text-xs">— crossed-out</span></label>
+                <Input type="number" value={comparePrice} onChange={(e) => setComparePrice(e.target.value)} placeholder="0.00" className="rounded-lg" />
               </div>
               <div>
                 <label className="text-sm font-medium text-text block mb-1.5">Stock Quantity</label>
-                <Input
-                  type="number"
-                  value={stock}
-                  onChange={(e) => setStock(e.target.value)}
-                  placeholder="0"
-                  className="rounded-lg"
-                />
+                <Input type="number" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" className="rounded-lg" />
               </div>
+            </div>
+
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-text">SKU</label>
+                <button onClick={() => setSku(generateSKU(name || "PRD"))}
+                  className="text-xs text-accent hover:underline flex items-center gap-1">
+                  <RefreshCw className="w-3 h-3" />Regenerate
+                </button>
+              </div>
+              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Auto-generated" className="rounded-lg font-mono text-sm" />
+              <p className="text-xs text-text-muted mt-1">Auto-generated from product name. You can edit it.</p>
             </div>
           </motion.div>
         </div>
 
-        {/* Sidebar */}
+        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <div className="space-y-6">
           {/* Status */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-white rounded-2xl border border-border p-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+            className="bg-white rounded-2xl border border-border p-6">
             <h2 className="font-bold text-text mb-4">Status</h2>
-            <select className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent">
+            <select value={status} onChange={(e) => setStatus(e.target.value)}
+              className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent">
               <option value="active">Active</option>
               <option value="draft">Draft</option>
               <option value="archived">Archived</option>
@@ -462,49 +546,34 @@ export default function NewProductPage() {
             </div>
           </motion.div>
 
-          {/* Category */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl border border-border p-6"
-          >
+          {/* Organization */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+            className="bg-white rounded-2xl border border-border p-6">
             <h2 className="font-bold text-text mb-4">Organization</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-text block mb-1.5">Category</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent"
-                >
+                <label className="text-sm font-medium text-text block mb-1.5">Category <span className="text-red-500">*</span></label>
+                <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent">
                   <option value="">Select category</option>
-                  {categories
-                    .filter((c: Any) => !c.parentId)
-                    .map((cat: Any) =>
-                      cat.children?.length > 0 ? (
-                        <optgroup key={cat.id} label={cat.name}>
-                          <option value={cat.id}>All {cat.name}</option>
-                          {cat.children.map((sub: Any) => (
-                            <option key={sub.id} value={sub.id}>
-                              &nbsp;&nbsp;↳ {sub.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ) : (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      )
+                  {categories.filter((c: Any) => !c.parentId).map((cat: Any) =>
+                    cat.children?.length > 0 ? (
+                      <optgroup key={cat.id} label={cat.name}>
+                        <option value={cat.id}>All {cat.name}</option>
+                        {cat.children.map((sub: Any) => (
+                          <option key={sub.id} value={sub.id}>&nbsp;&nbsp;↳ {sub.name}</option>
+                        ))}
+                      </optgroup>
+                    ) : (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
                     )
-                  }
+                  )}
                 </select>
               </div>
               <div>
                 <label className="text-sm font-medium text-text block mb-1.5">Brand</label>
-                <select
-                  value={brandId}
-                  onChange={(e) => setBrandId(e.target.value)}
-                  className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent"
-                >
+                <select value={brandId} onChange={(e) => setBrandId(e.target.value)}
+                  className="w-full bg-surface border-0 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-accent">
                   <option value="">Select brand</option>
                   {brands.map((brand: Any) => (
                     <option key={brand.id} value={brand.id}>{brand.name}</option>
@@ -512,16 +581,39 @@ export default function NewProductPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-text block mb-1.5">Tags</label>
-                <Input
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  placeholder="Comma separated tags"
-                  className="rounded-lg"
-                />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-text flex items-center gap-1.5"><Tag className="w-3.5 h-3.5" />Tags</label>
+                  <button onClick={() => setTags(generateTags(name, selectedCatName, selectedBrandName))}
+                    className="text-xs text-accent hover:underline flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />Auto-generate
+                  </button>
+                </div>
+                <Input value={tags} onChange={(e) => setTags(e.target.value)}
+                  placeholder="Comma separated tags" className="rounded-lg text-sm" />
+                <p className="text-xs text-text-muted mt-1">Click Auto-generate to suggest tags from name, category &amp; brand.</p>
               </div>
             </div>
           </motion.div>
+
+          {/* Pricing guidance card */}
+          {costPrice && price && (
+            <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl border border-border p-4">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-2">Pricing Summary</p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-text-muted">Cost</span><span className="font-medium">GH₵{parseFloat(costPrice || "0").toFixed(2)}</span></div>
+                <div className="flex justify-between"><span className="text-text-muted">Selling</span><span className="font-medium">GH₵{parseFloat(price || "0").toFixed(2)}</span></div>
+                {comparePrice && <div className="flex justify-between"><span className="text-text-muted">Was (Compare)</span><span className="line-through text-text-muted">GH₵{parseFloat(comparePrice).toFixed(2)}</span></div>}
+                <div className="border-t border-border my-1" />
+                <div className="flex justify-between font-semibold">
+                  <span>Gross Profit</span>
+                  <span className={(parseFloat(price) - parseFloat(costPrice)) >= 0 ? "text-green-600" : "text-red-600"}>
+                    GH₵{(parseFloat(price) - parseFloat(costPrice)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>
