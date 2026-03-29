@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, Edit, Trash2, Eye,
   Download, Upload, CheckSquare, X, ChevronLeft, ChevronRight,
-  AlertTriangle, RefreshCw, Copy, Check, ChevronDown, ChevronUp,
+  AlertTriangle, RefreshCw, Copy, Check, ChevronDown, ChevronUp, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -373,7 +373,13 @@ export default function AdminProductsPage() {
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="relative w-11 h-11 rounded-lg overflow-hidden bg-surface shrink-0">
-                        <Image src={product.images[0]?.url || "/placeholder.svg"} alt={product.name} fill className="object-cover" />
+                        {product.images[0]?.url ? (
+                          <Image src={product.images[0].url} alt={product.name} fill className="object-cover" />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Package className="w-5 h-5 text-border" />
+                          </div>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-text truncate max-w-[220px]">{product.name}</p>

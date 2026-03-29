@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, ShoppingCart, Trash2, ArrowRight } from "lucide-react";
+import { Heart, ShoppingCart, Trash2, ArrowRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist-store";
@@ -86,13 +86,20 @@ export default function WishlistPage() {
                 >
                   <Link href={`/product/${product.slug}`}>
                     <div className="relative aspect-square bg-surface overflow-hidden">
-                      <Image
-                        src={product.images[0]?.url || "/placeholder.svg"}
-                        alt={product.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                      />
+                      {product.images[0]?.url ? (
+                        <Image
+                          src={product.images[0].url}
+                          alt={product.name}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                          <Package className="w-10 h-10 text-border" />
+                          <span className="text-[10px] text-text-muted uppercase tracking-wider">No Image</span>
+                        </div>
+                      )}
                     </div>
                   </Link>
                   <div className="p-4">

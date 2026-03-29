@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Heart, ShoppingCart, Eye, Star } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Star, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice, getDiscountPercentage } from "@/lib/utils";
@@ -74,13 +74,20 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         <div className="product-card bg-white rounded-2xl border border-border/50 overflow-hidden">
           {/* Image Container */}
           <div className="relative aspect-square bg-surface overflow-hidden">
-            <Image
-              src={product.images[0]?.url || "/placeholder.svg"}
-              alt={product.name}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-500"
-              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            />
+            {product.images?.[0]?.url ? (
+              <Image
+                src={product.images[0].url}
+                alt={product.name}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
+                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface gap-2">
+                <Package className="w-10 h-10 text-border" />
+                <span className="text-[10px] text-text-muted uppercase tracking-wider">No Image</span>
+              </div>
+            )}
 
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-1.5">

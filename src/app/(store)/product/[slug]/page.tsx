@@ -18,6 +18,7 @@ import {
   Share2,
   ChevronRight,
   Check,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,13 +119,20 @@ export default function ProductDetailPage() {
             transition={{ duration: 0.5 }}
           >
             <div ref={imageRef} className="relative aspect-square bg-surface rounded-2xl overflow-hidden mb-4">
-              <Image
-                src={product.images[selectedImage]?.url || "/placeholder.svg"}
-                alt={product.name}
-                fill
-                className="object-cover"
-                priority
-              />
+              {product.images[selectedImage]?.url ? (
+                <Image
+                  src={product.images[selectedImage].url}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                  <Package className="w-16 h-16 text-border" />
+                  <span className="text-xs text-text-muted uppercase tracking-wider">No Image</span>
+                </div>
+              )}
               {discount > 0 && (
                 <Badge className="absolute top-4 left-4 text-sm">-{discount}%</Badge>
               )}
