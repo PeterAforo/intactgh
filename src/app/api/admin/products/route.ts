@@ -16,6 +16,10 @@ export async function GET(request: NextRequest) {
     where.OR = [
       { name: { contains: search } },
       { sku: { contains: search } },
+      { description: { contains: search } },
+      { tags: { contains: search } },
+      { brand: { name: { contains: search } } },
+      { category: { name: { contains: search } } },
     ];
   }
 
@@ -59,7 +63,7 @@ export async function POST(request: NextRequest) {
       const count = await prisma.product.count();
       finalSku = `INT${String((count + 1) % 99999 || 99999).padStart(5, "0")}`;
       // Ensure uniqueness in case of gaps/deletes
-      const existing = await prisma.product.findUnique({ where: { sku: finalSku } });
+      const existing = await prisma.product.findFirst({ where: { sku: finalSku } });
       if (existing) {
         finalSku = `INT${String(((count + Date.now()) % 99999) + 1).padStart(5, "0")}`;
       }
