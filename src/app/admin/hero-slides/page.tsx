@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Loader2, Upload, ImageIcon, X, Link as LinkIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,33 @@ export default function AdminHeroSlidesPage() {
   const [buttonLink, setButtonLink] = useState("");
   const [active, setActive] = useState(true);
   const [slides, setSlides] = useState<Any[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [useUrlInput, setUseUrlInput] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10 MB"); return; }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "intactghana/hero-slides");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setImageUrl(data.url);
+      toast.success("Image uploaded");
+    } catch (e: Any) { toast.error(e.message || "Upload failed"); }
+    finally { setUploading(false); }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleImageUpload(file);
+  };
 
   const fetchSlides = useCallback(() => {
     fetch("/api/admin/hero-slides").then(r => r.json()).then(d => {
@@ -32,7 +59,7 @@ export default function AdminHeroSlidesPage() {
 
   useEffect(() => { fetchSlides(); }, [fetchSlides]);
 
-  const resetForm = () => { setEditId(null); setTitle(""); setSubtitle(""); setDescription(""); setImageUrl(""); setButtonText(""); setButtonLink(""); setActive(true); setShowForm(false); };
+  const resetForm = () => { setEditId(null); setTitle(""); setSubtitle(""); setDescription(""); setImageUrl(""); setButtonText(""); setButtonLink(""); setActive(true); setShowForm(false); setUseUrlInput(false); };
 
   const handleEdit = (s: Any) => {
     setEditId(s.id); setTitle(s.title); setSubtitle(s.subtitle || ""); setDescription(s.description || "");
@@ -84,7 +111,53 @@ export default function AdminHeroSlidesPage() {
             <div className="md:col-span-2"><label className="text-sm font-medium text-text block mb-1.5">Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Slide description" rows={3} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Button Text</label><Input value={buttonText} onChange={(e) => setButtonText(e.target.value)} placeholder="e.g. Shop Now" className="rounded-lg" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Button Link</label><Input value={buttonLink} onChange={(e) => setButtonLink(e.target.value)} placeholder="e.g. /shop" className="rounded-lg" /></div>
-            <div className="md:col-span-2"><label className="text-sm font-medium text-text block mb-1.5">Background Image URL</label><Input value={image} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className="rounded-lg" /></div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-text block mb-1.5">Background Image</label>
+              {image ? (
+                <div className="relative rounded-xl overflow-hidden border border-border bg-surface">
+                  <div className="relative w-full h-48">
+                    <Image src={image} alt="Preview" fill className="object-cover" sizes="600px" />
+                  </div>
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button onClick={() => setImageUrl("")} className="bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="px-3 py-2 bg-surface text-xs text-text-muted truncate">{image}</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {!useUrlInput ? (
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 cursor-pointer transition-colors ${
+                        dragOver ? "border-accent bg-accent/5" : "border-border hover:border-accent/50 hover:bg-surface"
+                      }`}
+                    >
+                      {uploading ? (
+                        <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="w-8 h-8 text-text-muted" />
+                          <p className="text-sm text-text-muted">Click to upload or drag & drop</p>
+                          <p className="text-xs text-text-muted/60">PNG, JPG, WebP up to 10 MB</p>
+                        </>
+                      )}
+                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }} />
+                    </div>
+                  ) : (
+                    <Input value={image} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className="rounded-lg" />
+                  )}
+                  <button type="button" onClick={() => setUseUrlInput(!useUrlInput)} className="text-xs text-accent hover:underline flex items-center gap-1">
+                    {useUrlInput ? <><ImageIcon className="w-3 h-3" /> Upload image instead</> : <><LinkIcon className="w-3 h-3" /> Use image URL instead</>}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
           <label className="flex items-center gap-2 cursor-pointer mt-4">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="rounded border-border text-accent focus:ring-accent" />

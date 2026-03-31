@@ -46,7 +46,8 @@ export async function POST(request: NextRequest) {
   }
 
   const timestamp = Math.round(Date.now() / 1000).toString();
-  const folder = "intactghana/products";
+  const customFolder = formData.get("folder") as string | null;
+  const folder = customFolder?.trim() || "intactghana/products";
 
   const sigParams: Record<string, string> = { folder, timestamp };
   const signature = signCloudinary(sigParams, apiSecret);
