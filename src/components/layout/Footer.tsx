@@ -33,6 +33,7 @@ const footerLinks = {
     { href: "/store-locations", label: "Store Locations" },
     { href: "/news", label: "News & Blog" },
     { href: "/careers", label: "Careers" },
+    { href: "/gift-cards", label: "Gift Cards" },
   ],
   support: [
     { href: "/pages/shipping-returns", label: "Shipping & Returns" },
@@ -43,11 +44,11 @@ const footerLinks = {
     { href: "/faq", label: "FAQs" },
   ],
   categories: [
-    { href: "/shop/ai-smartphones", label: "AI Smartphones" },
+    { href: "/shop/phones-gadgets", label: "Phones & Gadgets" },
     { href: "/shop/computers-laptops", label: "Laptops & Computers" },
-    { href: "/shop/televisions", label: "TVs & Home Theatre" },
+    { href: "/shop/tv-home-theatre", label: "TVs & Home Theatre" },
     { href: "/shop/headphones-speakers-audio", label: "Audio & Headphones" },
-    { href: "/shop/consoles-games", label: "Gaming & Consoles" },
+    { href: "/shop/games-photography", label: "Gaming & Consoles" },
     { href: "/shop/appliances", label: "Home Appliances" },
   ],
 };

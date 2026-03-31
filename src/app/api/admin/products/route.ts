@@ -94,6 +94,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (variants && variants.length > 0) {
+      const cleanVariants = variants.filter((v: { name: string; options: string[] }) => v.name?.trim() && v.options?.some((o: string) => o.trim()));
+      if (cleanVariants.length > 0) {
+        await prisma.productVariant.createMany({
+          data: cleanVariants.map((v: { name: string; options: string[] }) => ({
+            productId: product.id,
+            name: v.name.trim(),
+            options: JSON.stringify(v.options.filter((o: string) => o.trim())),
+          })),
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, product });
   } catch (error) {
     console.error("Product create error:", error);

@@ -25,6 +25,8 @@ import {
   AlertCircle,
   Bike,
   Car,
+  Gift,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,8 +36,8 @@ import { useCartStore } from "@/store/cart-store";
 type PaymentMethod = "cod" | "pickup" | "hubtel" | "canpay";
 type DeliveryOption = "yango" | "bolt" | "pickup" | "standard";
 
-// Store coordinates (Intact Ghana - East Legon, A&C Mall, Accra)
-const STORE_LOCATION = { lat: 5.6416602, lng: -0.1520491, address: "East Legon, A&C Mall, Accra" };
+// Store coordinates (Intact Ghana - East Legon, A&C Mall, Greater Accra, Ghana)
+const STORE_LOCATION = { lat: 5.6369, lng: -0.1654, address: "East Legon, A&C Mall, Greater Accra, Ghana" };
 
 const STORE_LOCATIONS = [
   { id: "accra", name: "Accra Main - East Legon (A&C Mall)", region: "Greater Accra" },
@@ -113,6 +115,10 @@ export default function CheckoutPage() {
   const [estimatingDelivery, setEstimatingDelivery] = useState(false);
   const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardPin, setGiftCardPin] = useState("");
+  const [giftCardApplied, setGiftCardApplied] = useState<{ code: string; pin: string; balance: number; applied: number } | null>(null);
+  const [giftCardChecking, setGiftCardChecking] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -174,7 +180,8 @@ export default function CheckoutPage() {
       : selectedProvider?.baseFee || 0;
   const freeDeliveryThreshold = 3000;
   const finalDeliveryFee = subtotal >= freeDeliveryThreshold && deliveryOption === "standard" ? 0 : deliveryFee;
-  const total = subtotal + finalDeliveryFee;
+  const giftCardDiscount = giftCardApplied ? Math.min(giftCardApplied.applied, subtotal + finalDeliveryFee) : 0;
+  const total = subtotal + finalDeliveryFee - giftCardDiscount;
 
   // --- Validation ---
   const validateShipping = useCallback((): boolean => {
@@ -324,7 +331,7 @@ export default function CheckoutPage() {
               street: shipping.street, city: shipping.city,
               region: shipping.region, notes: shipping.notes,
             },
-            subtotal, deliveryFee: finalDeliveryFee, total,
+            subtotal, deliveryFee: finalDeliveryFee, total, giftCardCode: giftCardApplied?.code,
             paymentMethod: "canpay",
             ...(loggedInUserId ? { userId: loggedInUserId } : {}),
           }),
@@ -379,11 +386,25 @@ export default function CheckoutPage() {
           deliveryFee: finalDeliveryFee,
           total,
           paymentMethod,
+          giftCardCode: giftCardApplied?.code,
           ...(loggedInUserId ? { userId: loggedInUserId } : {}),
         }),
       });
       const orderData = await orderRes.json();
-      if (orderData.order?.orderNumber) setOrderNumber(orderData.order.orderNumber);
+      if (orderData.order?.orderNumber) {
+        setOrderNumber(orderData.order.orderNumber);
+        if (giftCardApplied) {
+          await fetch("/api/gift-cards/redeem", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code: giftCardApplied.code, pin: giftCardApplied.pin,
+              amountToUse: giftCardApplied.applied,
+              orderId: orderData.order.orderNumber,
+            }),
+          });
+        }
+      }
       setOrderPlaced(true);
       clearCart();
     } catch {
@@ -1022,6 +1043,54 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
+                {/* Gift Card */}
+                <div className="bg-surface rounded-xl p-4 mb-6 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Gift className="w-4 h-4 text-accent" />
+                    <p className="text-sm font-semibold text-text">Apply Gift Card</p>
+                  </div>
+                  {giftCardApplied ? (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
+                      <div>
+                        <p className="text-xs font-mono font-bold text-green-800">{giftCardApplied.code}</p>
+                        <p className="text-xs text-green-700">GH₵{giftCardApplied.applied.toFixed(2)} discount applied</p>
+                      </div>
+                      <button onClick={() => setGiftCardApplied(null)} className="p-1 rounded-lg hover:bg-green-100">
+                        <X className="w-4 h-4 text-green-700" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input value={giftCardCode} onChange={(e) => setGiftCardCode(e.target.value.toUpperCase())}
+                          placeholder="INTGC-XXXX-XXXX-XXXX" className="rounded-lg flex-1 font-mono text-xs" />
+                        <Input value={giftCardPin} onChange={(e) => setGiftCardPin(e.target.value)}
+                          placeholder="PIN" maxLength={6} className="rounded-lg w-20 font-mono text-center" />
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full rounded-lg" disabled={giftCardChecking}
+                        onClick={async () => {
+                          if (!giftCardCode.trim() || !giftCardPin.trim()) return;
+                          setGiftCardChecking(true);
+                          try {
+                            const res = await fetch("/api/gift-cards/validate", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ code: giftCardCode.trim(), pin: giftCardPin.trim() }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) { alert(data.error || "Invalid gift card"); return; }
+                            const applyAmt = Math.min(data.balance, subtotal + finalDeliveryFee);
+                            setGiftCardApplied({ code: data.code, pin: giftCardPin.trim(), balance: data.balance, applied: applyAmt });
+                            setGiftCardCode(""); setGiftCardPin("");
+                          } catch { alert("Could not validate gift card."); }
+                          finally { setGiftCardChecking(false); }
+                        }}>
+                        {giftCardChecking ? "Checking…" : "Apply Gift Card"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-between mt-6">
                   <Button variant="ghost" onClick={() => setStep(2)} className="rounded-xl">Back</Button>
                   <Button onClick={() => goToStep(4)} size="lg" className="rounded-xl">
@@ -1165,6 +1234,12 @@ export default function CheckoutPage() {
                     )}
                   </span>
                 </div>
+                {giftCardApplied && giftCardDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-600 flex items-center gap-1"><Gift className="w-3.5 h-3.5" />Gift Card</span>
+                    <span className="font-medium text-green-600">−{formatPrice(giftCardDiscount)}</span>
+                  </div>
+                )}
                 <div className="border-t border-border pt-3 flex justify-between">
                   <span className="font-bold text-text">Total</span>
                   <span className="font-bold text-xl text-accent">{formatPrice(total)}</span>

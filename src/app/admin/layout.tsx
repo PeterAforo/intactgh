@@ -24,6 +24,7 @@ import {
   Bell,
   Search,
   Sparkles,
+  Gift,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -39,6 +40,7 @@ const sidebarLinks = [
   { href: "/admin/pages", label: "Pages", icon: FileText },
   { href: "/admin/news", label: "News & Blog", icon: Newspaper },
   { href: "/admin/promotions", label: "Promotions", icon: Megaphone },
+  { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/ai-tools", label: "AI Tools", icon: Sparkles },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

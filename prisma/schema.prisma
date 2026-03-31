@@ -116,6 +116,24 @@ model ProductVariant {
   createdAt DateTime @default(now())
 }
 
+model GiftCard {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  pin         String
+  amount      Float
+  balance     Float
+  status      String    @default("active")
+  purchasedBy String?
+  purchasedAt DateTime?
+  redeemedBy  String?
+  redeemedAt  DateTime?
+  orderId     String?
+  expiresAt   DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Review {
   id        String   @id @default(cuid())
   rating    Int
