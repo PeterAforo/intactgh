@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/utils";
 import { sendCustomerOrderEmail, sendAdminOrderEmail, type OrderEmailData } from "@/lib/email";
 import { sendCustomerOrderSMS, sendAdminOrderSMS } from "@/lib/sms";
+import { fulfillGiftCardProducts } from "@/lib/gift-card-fulfillment";
 
 export async function POST(request: NextRequest) {
   try {
@@ -90,6 +91,12 @@ export async function POST(request: NextRequest) {
     fireOrderNotifications(order, customerName, shipping.email).catch((e) =>
       console.error("[Notifications] error:", e)
     );
+
+    // ── Auto-generate gift card codes if gift card products were purchased ────
+    fulfillGiftCardProducts(
+      order.id, orderNumber, customerName,
+      shipping.email || "", shipping.phone || "",
+    ).catch((e) => console.error("[GiftCard Fulfillment] error:", e));
 
     return NextResponse.json({ success: true, order });
   } catch (error) {
