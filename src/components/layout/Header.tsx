@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -79,6 +79,10 @@ export default function Header() {
   const [categories, setCategories] = useState<Cat[]>([]);
   const [authUser, setAuthUser] = useState<{ name?: string; email?: string } | null>(null);
   const [hoveredCat, setHoveredCat] = useState<Cat | null>(null);
+  const [instant, setInstant] = useState<{ products: Cat[]; brands: Cat[]; categories: Cat[] } | null>(null);
+  const [instantOpen, setInstantOpen] = useState(false);
+  const [instantLoading, setInstantLoading] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const cartItemCount = useCartStore((s) => s.getItemCount());
   const cartTotal = useCartStore((s) => s.getTotal());
@@ -95,12 +99,43 @@ export default function Header() {
     }).catch(() => {});
   }, []);
 
+  const fetchInstant = useCallback((q: string) => {
+    if (!q.trim()) { setInstant(null); setInstantOpen(false); return; }
+    setInstantLoading(true);
+    fetch(`/api/search?q=${encodeURIComponent(q.trim())}&limit=6`)
+      .then(r => r.json())
+      .then(d => { setInstant(d); setInstantOpen(true); })
+      .catch(() => {})
+      .finally(() => setInstantLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => fetchInstant(searchQuery), 250);
+    return () => clearTimeout(t);
+  }, [searchQuery, fetchInstant]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setInstantOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setInstantOpen(false);
       setSearchOpen(false);
     }
+  };
+
+  const goToResult = (href: string) => {
+    router.push(href);
+    setInstantOpen(false);
+    setSearchQuery("");
+    setSearchOpen(false);
   };
 
   useEffect(() => {
@@ -159,19 +194,95 @@ export default function Header() {
           </Link>
 
           {/* Search Bar - Desktop */}
-          <form onSubmit={handleSearch} className="hidden lg:flex flex-1 max-w-xl mx-8">
-            <div className="relative w-full">
-              <Input
-                placeholder="Search products, brands, categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-12 h-11 rounded-full bg-surface border-0 focus-visible:ring-accent"
-              />
-              <button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 bg-accent text-white p-2 rounded-full hover:bg-accent-hover transition-colors">
-                <Search className="w-4 h-4" />
-              </button>
-            </div>
-          </form>
+          <div ref={searchRef} className="hidden lg:flex flex-1 max-w-xl mx-8 relative">
+            <form onSubmit={handleSearch} className="w-full">
+              <div className="relative w-full">
+                <Input
+                  placeholder="Search products, brands, categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchQuery.trim() && instant && setInstantOpen(true)}
+                  className="pr-12 h-11 rounded-full bg-surface border-0 focus-visible:ring-accent"
+                />
+                <button type="submit" className="absolute right-1 top-1/2 -translate-y-1/2 bg-accent text-white p-2 rounded-full hover:bg-accent-hover transition-colors">
+                  {instantLoading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Search className="w-4 h-4" />}
+                </button>
+              </div>
+            </form>
+
+            {/* Instant typeahead dropdown */}
+            <AnimatePresence>
+              {instantOpen && instant && (instant.products.length > 0 || instant.brands.length > 0 || instant.categories.length > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-border z-[200] overflow-hidden max-h-[520px] overflow-y-auto"
+                >
+                  {/* Brands */}
+                  {instant.brands.length > 0 && (
+                    <div className="p-3 border-b border-border/50">
+                      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider px-2 mb-2">Brands</p>
+                      <div className="flex flex-wrap gap-2">
+                        {instant.brands.map((b: Cat) => (
+                          <button key={b.id} onClick={() => goToResult(`/shop?brand=${b.slug}`)}
+                            className="px-3 py-1.5 bg-surface hover:bg-accent/10 hover:text-accent border border-border rounded-full text-sm font-medium transition-colors">
+                            {b.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Categories */}
+                  {instant.categories.length > 0 && (
+                    <div className="p-3 border-b border-border/50">
+                      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider px-2 mb-2">Categories</p>
+                      <div className="flex flex-wrap gap-2">
+                        {instant.categories.map((c: Cat) => (
+                          <button key={c.id} onClick={() => goToResult(`/shop/${c.slug}`)}
+                            className="px-3 py-1.5 bg-surface hover:bg-accent/10 hover:text-accent border border-border rounded-full text-sm font-medium transition-colors">
+                            {c.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Products */}
+                  {instant.products.length > 0 && (
+                    <div className="p-2">
+                      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider px-2 mb-2">Products</p>
+                      {instant.products.map((p: Cat) => (
+                        <button key={p.id} onClick={() => goToResult(`/product/${p.slug}`)}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface transition-colors text-left">
+                          <div className="w-10 h-10 rounded-lg bg-surface border border-border overflow-hidden shrink-0">
+                            {p.images?.[0]?.url
+                              ? <Image src={p.images[0].url} alt={p.name} width={40} height={40} className="w-full h-full object-cover" />
+                              : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-border" /></div>}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-text truncate">{p.name}</p>
+                            <p className="text-xs text-text-muted">{p.brand?.name} &middot; GH&#8373;{p.price?.toFixed(2)}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* View all */}
+                  <div className="border-t border-border/50 p-3">
+                    <button onClick={() => goToResult(`/search?q=${encodeURIComponent(searchQuery.trim())}`)}
+                      className="w-full flex items-center justify-center gap-2 py-2 text-sm font-semibold text-accent hover:bg-accent/5 rounded-xl transition-colors">
+                      <Search className="w-4 h-4" />
+                      See all results for &quot;{searchQuery}&quot;
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Action Icons */}
           <div className="flex items-center gap-1 md:gap-3">
