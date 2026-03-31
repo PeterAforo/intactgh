@@ -28,6 +28,7 @@ import {
   Briefcase,
   ShieldCheck,
   ExternalLink,
+  Lock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -45,7 +46,8 @@ const sidebarLinks = [
   { href: "/admin/promotions", label: "Promotions", icon: Megaphone },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/careers", label: "Careers", icon: Briefcase },
-  { href: "/admin/users", label: "Users & Roles", icon: ShieldCheck },
+  { href: "/admin/users", label: "Users", icon: ShieldCheck },
+  { href: "/admin/roles", label: "Roles & Permissions", icon: Lock },
   { href: "/admin/ai-tools", label: "AI Tools", icon: Sparkles },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

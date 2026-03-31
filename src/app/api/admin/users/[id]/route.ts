@@ -39,9 +39,11 @@ export async function PUT(
     const body = await request.json();
     const { name, email, phone, role, password } = body;
 
-    const validRoles = ["admin", "staff", "customer"];
-    if (role && !validRoles.includes(role)) {
-      return NextResponse.json({ error: `Role must be one of: ${validRoles.join(", ")}` }, { status: 400 });
+    if (role) {
+      const validRole = await prisma.role.findUnique({ where: { name: role } });
+      if (!validRole) {
+        return NextResponse.json({ error: `Invalid role: "${role}"` }, { status: 400 });
+      }
     }
 
     // Prevent demoting the last admin
