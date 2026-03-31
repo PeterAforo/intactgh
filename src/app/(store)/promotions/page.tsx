@@ -4,50 +4,31 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Tag, Clock, Percent, ArrowRight, Zap, Gift, Truck, Package } from "lucide-react";
+import { Tag, Clock, Percent, ArrowRight, Zap, Gift, Truck, Package, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
-const activePromotions = [
-  {
-    id: "promo-1",
-    title: "Mega Electronics Sale",
-    description: "Get up to 30% off on selected smartphones, laptops, and accessories. Limited time offer!",
-    code: "MEGA30",
-    discount: "Up to 30% OFF",
-    bgColor: "from-accent to-pink-600",
-    icon: Zap,
-    endsAt: "2026-04-30",
-  },
-  {
-    id: "promo-2",
-    title: "Free Delivery Week",
-    description: "Enjoy free delivery on ALL orders this week. No minimum purchase required!",
-    code: "FREEDELIVERY",
-    discount: "FREE DELIVERY",
-    bgColor: "from-success to-emerald-600",
-    icon: Truck,
-    endsAt: "2026-04-07",
-  },
-  {
-    id: "promo-3",
-    title: "Bundle & Save",
-    description: "Buy any smartphone and get 20% off on accessories. Mix and match your perfect setup.",
-    code: "BUNDLE20",
-    discount: "20% OFF Accessories",
-    bgColor: "from-info to-blue-600",
-    icon: Gift,
-    endsAt: "2026-05-15",
-  },
+const GRADIENT_COLORS = [
+  "from-accent to-pink-600",
+  "from-success to-emerald-600",
+  "from-info to-blue-600",
+  "from-purple-500 to-violet-600",
+  "from-orange-500 to-red-500",
+  "from-cyan-500 to-blue-500",
 ];
+const PROMO_ICONS = [Zap, Gift, Truck, Sparkles, Percent, Tag];
 
 export default function PromotionsPage() {
+  const [promotions, setPromotions] = useState<Any[]>([]);
   const [saleProducts, setSaleProducts] = useState<Any[]>([]);
 
   useEffect(() => {
+    fetch("/api/promotions").then(r => r.json()).then(d => {
+      if (d.promotions) setPromotions(d.promotions);
+    }).catch(() => {});
     fetch("/api/products?onSale=true&limit=12").then(r => r.json()).then(d => {
       if (d.products) setSaleProducts(d.products);
     }).catch(() => {});
@@ -75,54 +56,54 @@ export default function PromotionsPage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Active Promotions */}
         <h2 className="text-2xl font-bold text-text mb-6">Active Promotions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-          {activePromotions.map((promo, i) => (
-            <motion.div
-              key={promo.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className={`bg-gradient-to-br ${promo.bgColor} text-white rounded-2xl p-6 relative overflow-hidden`}
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <promo.icon className="w-8 h-8 mb-4 opacity-80" />
-              <h3 className="text-xl font-bold mb-2">{promo.title}</h3>
-              <p className="text-white/80 text-sm mb-4 line-clamp-2">{promo.description}</p>
-              <div className="bg-white/20 rounded-lg px-3 py-2 inline-flex items-center gap-2 mb-4">
-                <Percent className="w-4 h-4" />
-                <span className="font-bold text-sm">{promo.discount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="bg-black/20 rounded-lg px-3 py-1.5">
-                  <span className="text-xs opacity-70">Code: </span>
-                  <span className="font-mono font-bold text-sm">{promo.code}</span>
-                </div>
-                <div className="flex items-center gap-1 text-xs opacity-70">
-                  <Clock className="w-3 h-3" />
-                  Ends {new Date(promo.endsAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Discount banner */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="bg-gradient-to-r from-gold/20 to-accent/20 border-2 border-dashed border-accent/30 rounded-2xl p-8 text-center mb-16"
-        >
-          <h3 className="text-2xl font-bold text-text mb-2">
-            Buy up to GH₵5,000 worth of products and get <span className="text-accent">5% Discount</span>
-          </h3>
-          <p className="text-text-muted mb-4">Applicable on all products. Automatically applied at checkout.</p>
-          <Link href="/shop">
-            <Button size="lg" className="rounded-xl">
-              Start Shopping <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </motion.div>
+        {promotions.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-border p-12 text-center mb-16">
+            <Tag className="w-10 h-10 text-text-muted mx-auto mb-3" />
+            <p className="text-text-muted">No active promotions right now. Check back soon!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {promotions.map((promo: Any, i: number) => {
+              const Icon = PROMO_ICONS[i % PROMO_ICONS.length];
+              const bg = GRADIENT_COLORS[i % GRADIENT_COLORS.length];
+              const discountLabel = promo.type === "percentage"
+                ? `${promo.discount}% OFF`
+                : `GH₵${promo.discount} OFF`;
+              return (
+                <motion.div
+                  key={promo.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className={`bg-gradient-to-br ${bg} text-white rounded-2xl p-6 relative overflow-hidden`}
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                  <Icon className="w-8 h-8 mb-4 opacity-80" />
+                  <h3 className="text-xl font-bold mb-2">{promo.title}</h3>
+                  {promo.description && (
+                    <p className="text-white/80 text-sm mb-4 line-clamp-2">{promo.description}</p>
+                  )}
+                  <div className="bg-white/20 rounded-lg px-3 py-2 inline-flex items-center gap-2 mb-4">
+                    <Percent className="w-4 h-4" />
+                    <span className="font-bold text-sm">{discountLabel}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    {promo.code && (
+                      <div className="bg-black/20 rounded-lg px-3 py-1.5">
+                        <span className="text-xs opacity-70">Code: </span>
+                        <span className="font-mono font-bold text-sm">{promo.code}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1 text-xs opacity-70">
+                      <Clock className="w-3 h-3" />
+                      Ends {new Date(promo.endDate).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Sale Products */}
         <h2 className="text-2xl font-bold text-text mb-6">Products on Sale</h2>
