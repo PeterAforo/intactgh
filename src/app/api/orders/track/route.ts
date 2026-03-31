@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const order = await prisma.order.findFirst({
     where: {
       orderNumber,
-      shippingEmail: { equals: email, mode: "insensitive" },
+      user: { email: { equals: email, mode: "insensitive" } },
     },
     select: {
       id: true,
@@ -23,15 +23,15 @@ export async function GET(request: NextRequest) {
       paymentStatus: true,
       paymentMethod: true,
       subtotal: true,
-      deliveryFee: true,
+      shipping: true,
       total: true,
       createdAt: true,
       updatedAt: true,
-      shippingFirstName: true,
-      shippingLastName: true,
-      shippingEmail: true,
+      shippingName: true,
+      shippingPhone: true,
       shippingCity: true,
       shippingRegion: true,
+      user: { select: { email: true } },
       items: {
         select: {
           quantity: true,
