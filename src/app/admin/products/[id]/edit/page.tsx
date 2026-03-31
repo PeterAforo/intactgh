@@ -548,6 +548,21 @@ export default function EditProductPage() {
                 <Input type="number" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="0" className="rounded-lg" />
               </div>
             </div>
+            {comparePrice && price && parseFloat(comparePrice) > parseFloat(price) && (
+              <div className="mt-3 bg-accent/5 border border-accent/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-sm shrink-0">
+                  {Math.round(((parseFloat(comparePrice) - parseFloat(price)) / parseFloat(comparePrice)) * 100)}%
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-text">
+                    Discount: {Math.round(((parseFloat(comparePrice) - parseFloat(price)) / parseFloat(comparePrice)) * 100)}% off
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Customers see <span className="line-through">GH₵{parseFloat(comparePrice).toFixed(2)}</span> → <span className="font-semibold text-accent">GH₵{parseFloat(price).toFixed(2)}</span> (saves GH₵{(parseFloat(comparePrice) - parseFloat(price)).toFixed(2)})
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="mt-4">
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-text">SKU</label>
