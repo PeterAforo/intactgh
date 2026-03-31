@@ -51,16 +51,16 @@ export async function GET(request: NextRequest) {
   if (search) {
     // Pre-lookup IDs — Prisma/SQLite can't resolve relation filters inside OR reliably
     const [matchingBrands, matchingCategories] = await Promise.all([
-      prisma.brand.findMany({ where: { name: { contains: search } }, select: { id: true } }),
-      prisma.category.findMany({ where: { name: { contains: search } }, select: { id: true } }),
+      prisma.brand.findMany({ where: { name: { contains: search, mode: "insensitive" } }, select: { id: true } }),
+      prisma.category.findMany({ where: { name: { contains: search, mode: "insensitive" } }, select: { id: true } }),
     ]);
     const brandIds = matchingBrands.map((b) => b.id);
     const catIds = matchingCategories.map((c) => c.id);
     where.OR = [
-      { name: { contains: search } },
-      { description: { contains: search } },
-      { tags: { contains: search } },
-      { sku: { contains: search } },
+      { name: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
+      { tags: { contains: search, mode: "insensitive" } },
+      { sku: { contains: search, mode: "insensitive" } },
       ...(brandIds.length ? [{ brandId: { in: brandIds } }] : []),
       ...(catIds.length ? [{ categoryId: { in: catIds } }] : []),
     ];
