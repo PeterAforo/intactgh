@@ -40,6 +40,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [addedToCart, setAddedToCart] = useState(false);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
   const imageRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
@@ -230,6 +231,39 @@ export default function ProductDetailPage() {
                 <span className="text-xs text-text-muted ml-auto">SKU: {product.sku}</span>
               )}
             </div>
+
+            {/* Variant Picker */}
+            {product.variants && product.variants.length > 0 && (
+              <div className="space-y-4 mb-6">
+                {product.variants.map((variant: Any) => {
+                  const options: string[] = (() => { try { return JSON.parse(variant.options); } catch { return []; } })();
+                  const selected = selectedVariants[variant.name];
+                  return (
+                    <div key={variant.id}>
+                      <p className="text-sm font-semibold text-text mb-2">
+                        {variant.name}:
+                        {selected && <span className="ml-1.5 font-normal text-accent">{selected}</span>}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {options.map((opt: string) => (
+                          <button
+                            key={opt}
+                            onClick={() => setSelectedVariants((prev) => ({ ...prev, [variant.name]: prev[variant.name] === opt ? "" : opt }))}
+                            className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                              selected === opt
+                                ? "bg-accent text-white border-accent shadow-sm"
+                                : "bg-white border-border text-text hover:border-accent/60 hover:bg-surface"
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Quantity & Add to Cart */}
             <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">

@@ -98,7 +98,7 @@ export default function AboutPage() {
             </h2>
             <div className="space-y-4 text-text-light leading-relaxed">
               <p>
-                Founded in 2020, Intact Ghana was born from a simple vision: to make world-class
+                Founded in 2014, Intact Ghana was born from a simple vision: to make world-class
                 technology accessible to every Ghanaian. Located at East Legon (A&amp;C Mall)
                 in Greater Accra, we have grown to become one of Ghana&apos;s most trusted electronics
                 retailers.
@@ -132,7 +132,7 @@ export default function AboutPage() {
             </div>
             <div className="absolute -bottom-6 -left-6 bg-accent text-white p-6 rounded-2xl shadow-xl">
               <p className="text-3xl font-black">Since</p>
-              <p className="text-4xl font-black">2020</p>
+              <p className="text-4xl font-black">2014</p>
             </div>
           </motion.div>
         </div>

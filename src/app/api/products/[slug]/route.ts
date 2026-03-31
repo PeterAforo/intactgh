@@ -10,6 +10,7 @@ const productInclude = {
     orderBy: { createdAt: "desc" as const },
     take: 10,
   },
+  variants: { select: { id: true, name: true, options: true }, orderBy: { createdAt: "asc" as const } },
 };
 
 export async function GET(

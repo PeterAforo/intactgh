@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { amount, description, customerName, customerEmail } = body;
+    const { amount, description, customerName, customerEmail, orderNumber } = body;
 
     if (!amount) {
       return NextResponse.json(
@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     const environment = process.env.CANPAY_ENVIRONMENT || "production";
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-    const reference = `ORDER_${Date.now()}`;
+    // Use real order number if provided so callback can match it to DB order
+    const reference = orderNumber || `ORDER_${Date.now()}`;
     const callbackUrl = `${baseUrl}/api/payments/canpay/callback?ref_trx=${encodeURIComponent(reference)}`;
 
     // Dev mode fallback if no CanPay credentials

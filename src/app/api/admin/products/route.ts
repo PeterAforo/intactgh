@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name, slug, description, price, comparePrice, costPrice, sku, stock,
-      categoryId, brandId, featured, isNew, onSale, tags, images, specs, videoUrl,
+      categoryId, brandId, featured, isNew, onSale, tags, images, specs, videoUrl, variants,
     } = body;
 
     if (!name || !slug || !description || !price || !categoryId) {

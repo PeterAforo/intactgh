@@ -95,6 +95,7 @@ model Product {
   orderItems    OrderItem[]
   wishlistItems WishlistItem[]
   cartItems     CartItem[]
+  variants      ProductVariant[]
 }
 
 model ProductImage {
@@ -104,6 +105,15 @@ model ProductImage {
   order     Int     @default(0)
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  options   String
+  createdAt DateTime @default(now())
 }
 
 model Review {

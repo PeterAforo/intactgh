@@ -312,22 +312,51 @@ export default function CheckoutPage() {
           return;
         }
       } else if (paymentMethod === "canpay") {
-        const description = items.map((i) => `${i.product.name} x${i.quantity}`).join(", ");
-        const res = await fetch("/api/payments/canpay", {
+        // 1. Create order first so callback can find it by orderNumber
+        const orderRes = await fetch("/api/orders", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            amount: total,
-            description,
-            customerName: `${shipping.firstName} ${shipping.lastName}`,
-            customerEmail: shipping.email,
+            items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, price: i.product.price })),
+            shipping: {
+              firstName: shipping.firstName, lastName: shipping.lastName,
+              email: shipping.email, phone: shipping.phone,
+              street: shipping.street, city: shipping.city,
+              region: shipping.region, notes: shipping.notes,
+            },
+            subtotal, deliveryFee: finalDeliveryFee, total,
+            paymentMethod: "canpay",
+            ...(loggedInUserId ? { userId: loggedInUserId } : {}),
           }),
         });
-        const data = await res.json();
-        if (data.redirectUrl) {
-          window.location.href = data.redirectUrl;
+        const orderData = await orderRes.json();
+        const pendingOrderNumber = orderData.order?.orderNumber;
+
+        // 2. Call CanPay with the real order number
+        const description = items.map((i) => `${i.product.name} x${i.quantity}`).join(", ");
+        const cpRes = await fetch("/api/payments/canpay", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: total, description,
+            customerName: `${shipping.firstName} ${shipping.lastName}`,
+            customerEmail: shipping.email,
+            orderNumber: pendingOrderNumber,
+          }),
+        });
+        const cpData = await cpRes.json();
+        if (cpData.redirectUrl) {
+          clearCart();
+          window.location.href = cpData.redirectUrl;
           return;
         }
+        // CanPay not configured — show success with the created order
+        if (pendingOrderNumber) {
+          setOrderNumber(pendingOrderNumber);
+          setOrderPlaced(true);
+          clearCart();
+        }
+        return;
       }
 
       // COD / Pickup — place order directly

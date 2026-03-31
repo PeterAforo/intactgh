@@ -19,6 +19,7 @@ import toast from "react-hot-toast";
 type Any = any;
 
 interface SpecRow { key: string; value: string; }
+interface VariantRow { name: string; options: string[]; }
 interface AiOptions { removeBg: boolean; crop: boolean; straighten: boolean; proportional: boolean; upscale: boolean; }
 
 function applyCloudinaryTransforms(url: string, opts: AiOptions): string {
@@ -109,6 +110,7 @@ export default function EditProductPage() {
 
   const [categories, setCategories] = useState<Any[]>([]);
   const [brands, setBrands] = useState<Any[]>([]);
+  const [variants, setVariants] = useState<VariantRow[]>([]);
 
   // Load categories, brands, and the product
   useEffect(() => {
@@ -138,6 +140,13 @@ export default function EditProductPage() {
         setOnSale(!!p.onSale);
         setVideoUrl(p.videoUrl ?? "");
         setImages(p.images?.map((img: Any) => img.url) ?? []);
+        // Load variants
+        if (p.variants?.length) {
+          setVariants(p.variants.map((v: Any) => ({
+            name: v.name,
+            options: (() => { try { return JSON.parse(v.options); } catch { return [v.options]; } })(),
+          })));
+        }
         // Parse specs JSON
         if (p.specs) {
           try {
@@ -166,11 +175,15 @@ export default function EditProductPage() {
     setSaving(true);
     try {
       const imgList = images.map((url) => ({ url }));
+      const cleanVariants = variants
+        .filter((v) => v.name.trim() && v.options.some((o) => o.trim()))
+        .map((v) => ({ name: v.name.trim(), options: v.options.filter((o) => o.trim()) }));
       const body = {
         name, slug, description, price, comparePrice, costPrice,
         sku, stock, categoryId, brandId, featured, isNew, onSale,
         tags, images: imgList, specs: specsToJson(),
         videoUrl: videoUrl || null, status,
+        variants: cleanVariants,
       };
       const res = await fetch(`/api/admin/products/${productId}`, {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -422,6 +435,71 @@ export default function EditProductPage() {
                   <iframe src={embedUrl} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                 </div>
               )}
+            </div>
+          </motion.div>
+
+          {/* Product Variants */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="bg-white rounded-2xl border border-border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-bold text-text">Product Variants</h2>
+                <p className="text-xs text-text-muted mt-0.5">e.g. Color: Red, Blue | Storage: 128GB, 256GB</p>
+              </div>
+              <Button variant="outline" size="sm" className="rounded-lg"
+                onClick={() => setVariants((p) => [...p, { name: "", options: [""] }])}>
+                <Plus className="w-3.5 h-3.5 mr-1" />Add Option
+              </Button>
+            </div>
+            {variants.length === 0 && (
+              <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
+                <p className="text-sm text-text-muted">No variants added.</p>
+                <p className="text-xs text-text-muted mt-1">Click &quot;Add Option&quot; to add Color, Size, Storage, etc.</p>
+              </div>
+            )}
+            <div className="space-y-4">
+              {variants.map((variant, vi) => (
+                <div key={vi} className="bg-surface rounded-xl p-4 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Input
+                      value={variant.name}
+                      onChange={(e) => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], name: e.target.value }; return n; })}
+                      placeholder="Option name (e.g. Color, Storage)"
+                      className="rounded-lg flex-1 text-sm font-medium"
+                    />
+                    <button
+                      onClick={() => setVariants((p) => p.filter((_, i) => i !== vi))}
+                      className="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {variant.options.map((opt, oi) => (
+                      <div key={oi} className="flex items-center gap-2">
+                        <Input
+                          value={opt}
+                          onChange={(e) => setVariants((p) => {
+                            const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.map((o, i) => i === oi ? e.target.value : o) }; return n;
+                          })}
+                          placeholder={`Option ${oi + 1}`}
+                          className="rounded-lg text-sm flex-1"
+                        />
+                        {variant.options.length > 1 && (
+                          <button
+                            onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.filter((_, i) => i !== oi) }; return n; })}
+                            className="w-7 h-7 flex items-center justify-center text-red-400 hover:text-red-600">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: [...n[vi].options, ""] }; return n; })}
+                    className="mt-2 text-xs text-accent hover:underline flex items-center gap-1">
+                    <Plus className="w-3 h-3" />Add value
+                  </button>
+                </div>
+              ))}
             </div>
           </motion.div>
 

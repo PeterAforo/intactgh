@@ -563,19 +563,24 @@ export default function AccountPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          {[
-            { icon: Package, label: "My Orders",  href: "/account" },
-            { icon: Heart,   label: "Wishlist",   href: "/wishlist" },
-            { icon: MapPin,  label: "Addresses",  href: "/account" },
-            { icon: Settings,label: "Settings",   href: "/account" },
-          ].map((link) => (
-            <Link key={link.label} href={link.href}
-              className="bg-white rounded-xl border border-border p-3 flex items-center gap-2 hover:border-accent/30 transition-colors">
-              <link.icon className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium text-text">{link.label}</span>
-            </Link>
-          ))}
+        <div className="mt-6 bg-white rounded-2xl border border-border p-5">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4">Available after sign in</p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: Package, label: "My Orders",  desc: "Track your orders" },
+              { icon: Heart,   label: "Wishlist",   desc: "Saved products" },
+              { icon: MapPin,  label: "Addresses",  desc: "Delivery info" },
+              { icon: Settings,label: "Settings",   desc: "Profile & password" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-3 p-3 bg-surface rounded-xl opacity-60">
+                <item.icon className="w-4 h-4 text-accent shrink-0" />
+                <div>
+                  <p className="text-xs font-medium text-text">{item.label}</p>
+                  <p className="text-[10px] text-text-muted">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </motion.div>
     </div>

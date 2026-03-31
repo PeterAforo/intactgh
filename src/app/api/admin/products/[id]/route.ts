@@ -15,6 +15,7 @@ export async function GET(
       category: true,
       brand: true,
       reviews: { include: { user: { select: { name: true } } } },
+      variants: { select: { id: true, name: true, options: true }, orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -35,7 +36,7 @@ export async function PUT(
     const body = await request.json();
     const {
       name, slug, description, price, comparePrice, sku, stock,
-      categoryId, brandId, featured, isNew, onSale, tags, specs, status, images,
+      categoryId, brandId, featured, isNew, onSale, tags, specs, status, images, variants,
     } = body;
 
     const data: Record<string, unknown> = {};
@@ -74,6 +75,19 @@ export async function PUT(
       });
     }
 
+    if (variants !== undefined) {
+      await prisma.productVariant.deleteMany({ where: { productId: id } });
+      if (variants.length > 0) {
+        await prisma.productVariant.createMany({
+          data: variants.map((v: { name: string; options: string[] }) => ({
+            productId: id,
+            name: v.name.trim(),
+            options: JSON.stringify(v.options.filter((o: string) => o.trim())),
+          })),
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, product });
   } catch (error) {
     console.error("Product update error:", error);
@@ -89,6 +103,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     await prisma.productImage.deleteMany({ where: { productId: id } });
+    await prisma.productVariant.deleteMany({ where: { productId: id } });
     await prisma.product.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {

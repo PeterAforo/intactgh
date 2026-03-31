@@ -44,11 +44,11 @@ const footerLinks = {
   ],
   categories: [
     { href: "/shop/ai-smartphones", label: "AI Smartphones" },
-    { href: "/shop/laptops-computers", label: "Laptops & Computers" },
-    { href: "/shop/tvs-home-theatre", label: "TVs & Home Theatre" },
-    { href: "/shop/audio-headphones", label: "Audio & Headphones" },
-    { href: "/shop/gaming-consoles", label: "Gaming & Consoles" },
-    { href: "/shop/home-appliances", label: "Home Appliances" },
+    { href: "/shop/computers-laptops", label: "Laptops & Computers" },
+    { href: "/shop/televisions", label: "TVs & Home Theatre" },
+    { href: "/shop/headphones-speakers-audio", label: "Audio & Headphones" },
+    { href: "/shop/consoles-games", label: "Gaming & Consoles" },
+    { href: "/shop/appliances", label: "Home Appliances" },
   ],
 };
 
@@ -127,7 +127,7 @@ export default function Footer() {
             <Image src="/logo-white.png" alt="Intact Ghana" width={160} height={50} className="h-10 w-auto mb-4 brightness-0 invert" />
             <p className="text-white/60 text-sm leading-relaxed mb-6">
               Intact Ghana is your premier destination for electronics, smartphones, laptops, and home appliances. 
-              Racing with technology since 2020, we bring you the best products at competitive prices with 
+              Racing with technology since 2014, we bring you the best products at competitive prices with 
               exceptional customer service across Ghana.
             </p>
             <div className="space-y-3">
