@@ -36,6 +36,7 @@ const footerLinks = {
     { href: "/gift-cards", label: "Gift Cards" },
   ],
   support: [
+    { href: "/track-order", label: "Track Order" },
     { href: "/pages/shipping-returns", label: "Shipping & Returns" },
     { href: "/pages/privacy-policy", label: "Privacy Policy" },
     { href: "/pages/terms-of-use", label: "Terms & Conditions" },

@@ -19,7 +19,8 @@ import toast from "react-hot-toast";
 type Any = any;
 
 interface SpecRow { key: string; value: string; }
-interface VariantRow { name: string; options: string[]; }
+interface VariantOption { value: string; priceAdd: number; }
+interface VariantRow { name: string; options: VariantOption[]; }
 interface AiOptions { removeBg: boolean; crop: boolean; straighten: boolean; proportional: boolean; upscale: boolean; }
 
 function applyCloudinaryTransforms(url: string, opts: AiOptions): string {
@@ -142,10 +143,18 @@ export default function EditProductPage() {
         setImages(p.images?.map((img: Any) => img.url) ?? []);
         // Load variants
         if (p.variants?.length) {
-          setVariants(p.variants.map((v: Any) => ({
-            name: v.name,
-            options: (() => { try { return JSON.parse(v.options); } catch { return [v.options]; } })(),
-          })));
+          setVariants(p.variants.map((v: Any) => {
+            let opts: VariantOption[] = [];
+            try {
+              const raw = JSON.parse(v.options);
+              if (raw.length > 0 && typeof raw[0] === "string") {
+                opts = raw.map((s: string) => ({ value: s, priceAdd: 0 }));
+              } else {
+                opts = raw.map((o: Any) => ({ value: String(o.value || o), priceAdd: Number(o.priceAdd || 0) }));
+              }
+            } catch { opts = [{ value: "", priceAdd: 0 }]; }
+            return { name: v.name, options: opts };
+          }));
         }
         // Parse specs JSON
         if (p.specs) {
@@ -176,8 +185,8 @@ export default function EditProductPage() {
     try {
       const imgList = images.map((url) => ({ url }));
       const cleanVariants = variants
-        .filter((v) => v.name.trim() && v.options.some((o) => o.trim()))
-        .map((v) => ({ name: v.name.trim(), options: v.options.filter((o) => o.trim()) }));
+        .filter((v) => v.name.trim() && v.options.some((o) => o.value.trim()))
+        .map((v) => ({ name: v.name.trim(), options: v.options.filter((o) => o.value.trim()) }));
       const body = {
         name, slug, description, price, comparePrice, costPrice,
         sku, stock, categoryId, brandId, featured, isNew, onSale,
@@ -446,7 +455,7 @@ export default function EditProductPage() {
                 <p className="text-xs text-text-muted mt-0.5">e.g. Color: Red, Blue | Storage: 128GB, 256GB</p>
               </div>
               <Button variant="outline" size="sm" className="rounded-lg"
-                onClick={() => setVariants((p) => [...p, { name: "", options: [""] }])}>
+                onClick={() => setVariants((p) => [...p, { name: "", options: [{ value: "", priceAdd: 0 }] }])}>
                 <Plus className="w-3.5 h-3.5 mr-1" />Add Option
               </Button>
             </div>
@@ -476,13 +485,25 @@ export default function EditProductPage() {
                     {variant.options.map((opt, oi) => (
                       <div key={oi} className="flex items-center gap-2">
                         <Input
-                          value={opt}
+                          value={opt.value}
                           onChange={(e) => setVariants((p) => {
-                            const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.map((o, i) => i === oi ? e.target.value : o) }; return n;
+                            const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.map((o, i) => i === oi ? { ...o, value: e.target.value } : o) }; return n;
                           })}
-                          placeholder={`Option ${oi + 1}`}
+                          placeholder={`Option ${oi + 1} (e.g. Red)`}
                           className="rounded-lg text-sm flex-1"
                         />
+                        <div className="relative w-28">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-text-muted">+GH₵</span>
+                          <Input
+                            type="number" min="0" step="0.01"
+                            value={opt.priceAdd || ""}
+                            onChange={(e) => setVariants((p) => {
+                              const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.map((o, i) => i === oi ? { ...o, priceAdd: parseFloat(e.target.value) || 0 } : o) }; return n;
+                            })}
+                            placeholder="0"
+                            className="rounded-lg text-sm pl-9"
+                          />
+                        </div>
                         {variant.options.length > 1 && (
                           <button
                             onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.filter((_, i) => i !== oi) }; return n; })}
@@ -494,7 +515,7 @@ export default function EditProductPage() {
                     ))}
                   </div>
                   <button
-                    onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: [...n[vi].options, ""] }; return n; })}
+                    onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: [...n[vi].options, { value: "", priceAdd: 0 }] }; return n; })}
                     className="mt-2 text-xs text-accent hover:underline flex items-center gap-1">
                     <Plus className="w-3 h-3" />Add value
                   </button>

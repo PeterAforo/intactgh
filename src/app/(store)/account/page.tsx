@@ -305,13 +305,19 @@ export default function AccountPage() {
                               </div>
                             )}
 
-                            {/* Delivery info if available */}
-                            {order.shippingName && (
-                              <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-1.5 text-xs text-text-muted">
-                                <MapPin className="w-3.5 h-3.5 shrink-0" />
-                                <span>{order.shippingName} &middot; {order.shippingCity || ""} {order.shippingRegion || ""}</span>
-                              </div>
-                            )}
+                            {/* Delivery info + Track button */}
+                            <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between gap-2 flex-wrap">
+                              {order.shippingName && (
+                                <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                  <span>{order.shippingName} &middot; {order.shippingCity || ""} {order.shippingRegion || ""}</span>
+                                </div>
+                              )}
+                              <Link href={`/track-order?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.shippingEmail || user?.email || "")}`}
+                                className="text-xs font-medium text-accent hover:underline flex items-center gap-1 shrink-0 ml-auto">
+                                <Package className="w-3.5 h-3.5" />Track Order
+                              </Link>
+                            </div>
                           </div>
                         ))}
                       </div>

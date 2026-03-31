@@ -19,7 +19,8 @@ import toast from "react-hot-toast";
 type Any = any;
 
 interface SpecRow { key: string; value: string; }
-interface VariantRow { name: string; options: string[]; }
+interface VariantOption { value: string; priceAdd: number; }
+interface VariantRow { name: string; options: VariantOption[]; }
 interface AiOptions {
   removeBg: boolean; crop: boolean; straighten: boolean;
   proportional: boolean; upscale: boolean;
@@ -165,8 +166,8 @@ export default function NewProductPage() {
       const finalSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "");
       const imgList = images.map((url) => ({ url }));
       const cleanVariants = variants
-        .filter((v) => v.name.trim() && v.options.some((o) => o.trim()))
-        .map((v) => ({ name: v.name.trim(), options: v.options.filter((o) => o.trim()) }));
+        .filter((v) => v.name.trim() && v.options.some((o) => o.value.trim()))
+        .map((v) => ({ name: v.name.trim(), options: v.options.filter((o) => o.value.trim()) }));
       const body = {
         name, slug: finalSlug, description, price, comparePrice, costPrice,
         sku, stock, categoryId, brandId, featured, isNew, onSale,
@@ -484,7 +485,7 @@ export default function NewProductPage() {
                 <p className="text-xs text-text-muted mt-0.5">e.g. Color: Red, Blue | Storage: 128GB, 256GB</p>
               </div>
               <Button variant="outline" size="sm" className="rounded-lg"
-                onClick={() => setVariants((p) => [...p, { name: "", options: [""] }])}>
+                onClick={() => setVariants((p) => [...p, { name: "", options: [{ value: "", priceAdd: 0 }] }])}>
                 <Plus className="w-3.5 h-3.5 mr-1" />Add Option
               </Button>
             </div>
@@ -506,12 +507,19 @@ export default function NewProductPage() {
                       <X className="w-4 h-4" />
                     </button>
                   </div>
+                  <p className="text-xs text-text-muted mb-2">Value · Extra cost (optional)</p>
                   <div className="space-y-2">
                     {variant.options.map((opt, oi) => (
                       <div key={oi} className="flex items-center gap-2">
-                        <Input value={opt}
-                          onChange={(e) => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.map((o, i) => i === oi ? e.target.value : o) }; return n; })}
-                          placeholder={`Option ${oi + 1}`} className="rounded-lg text-sm flex-1" />
+                        <Input value={opt.value}
+                          onChange={(e) => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.map((o, i) => i === oi ? { ...o, value: e.target.value } : o) }; return n; })}
+                          placeholder={`Option ${oi + 1} (e.g. Red)`} className="rounded-lg text-sm flex-1" />
+                        <div className="relative w-28">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-text-muted">+GH₵</span>
+                          <Input type="number" min="0" step="0.01" value={opt.priceAdd || ""}
+                            onChange={(e) => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.map((o, i) => i === oi ? { ...o, priceAdd: parseFloat(e.target.value) || 0 } : o) }; return n; })}
+                            placeholder="0" className="rounded-lg text-sm pl-9" />
+                        </div>
                         {variant.options.length > 1 && (
                           <button onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: n[vi].options.filter((_, i) => i !== oi) }; return n; })}
                             className="w-7 h-7 flex items-center justify-center text-red-400 hover:text-red-600">
@@ -521,7 +529,7 @@ export default function NewProductPage() {
                       </div>
                     ))}
                   </div>
-                  <button onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: [...n[vi].options, ""] }; return n; })}
+                  <button onClick={() => setVariants((p) => { const n = [...p]; n[vi] = { ...n[vi], options: [...n[vi].options, { value: "", priceAdd: 0 }] }; return n; })}
                     className="mt-2 text-xs text-accent hover:underline flex items-center gap-1">
                     <Plus className="w-3 h-3" />Add value
                   </button>

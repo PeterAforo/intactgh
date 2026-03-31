@@ -47,6 +47,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     e.stopPropagation();
     const cartProduct: CartProduct = {
       id: product.id,
+      cartId: product.id,
       name: product.name,
       slug: product.slug,
       price: product.price,

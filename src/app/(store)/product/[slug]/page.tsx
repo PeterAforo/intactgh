@@ -69,6 +69,30 @@ export default function ProductDetailPage() {
     ? getDiscountPercentage(product.price, product.comparePrice)
     : 0;
 
+  // Parse variant options: supports both legacy string[] and new {value,priceAdd}[] format
+  const parsedVariants: Array<{ id: string; name: string; options: Array<{ value: string; priceAdd: number }> }> =
+    product?.variants?.map((v: Any) => {
+      let opts: Array<{ value: string; priceAdd: number }> = [];
+      try {
+        const raw = JSON.parse(v.options);
+        if (raw.length > 0 && typeof raw[0] === "string") {
+          opts = raw.map((s: string) => ({ value: s, priceAdd: 0 }));
+        } else {
+          opts = raw;
+        }
+      } catch { opts = []; }
+      return { id: v.id, name: v.name, options: opts };
+    }) ?? [];
+
+  const variantPriceAdd = parsedVariants.reduce((sum, v) => {
+    const sel = selectedVariants[v.name];
+    if (!sel) return sum;
+    const opt = v.options.find((o) => o.value === sel);
+    return sum + (opt?.priceAdd ?? 0);
+  }, 0);
+
+  const displayPrice = product ? product.price + variantPriceAdd : 0;
+
   if (!product) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center">
@@ -78,14 +102,25 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
+    const variantLabel = Object.entries(selectedVariants)
+      .filter(([, v]) => v)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(" · ");
+    const variantKey = Object.entries(selectedVariants)
+      .filter(([, v]) => v)
+      .sort()
+      .map(([k, v]) => `${k}=${v}`)
+      .join("&");
     const cartProduct: CartProduct = {
       id: product.id,
+      cartId: variantKey ? `${product.id}|${variantKey}` : product.id,
       name: product.name,
       slug: product.slug,
-      price: product.price,
+      price: displayPrice,
       comparePrice: product.comparePrice,
       image: product.images[0]?.url || "",
       stock: product.stock,
+      variantLabel: variantLabel || undefined,
     };
     addItem(cartProduct, quantity);
     setAddedToCart(true);
@@ -197,14 +232,19 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div className="flex items-center gap-3 mb-6">
               <span className="text-3xl md:text-4xl font-black text-accent">
-                {formatPrice(product.price)}
+                {formatPrice(displayPrice)}
               </span>
-              {product.comparePrice && product.comparePrice > product.price && (
+              {variantPriceAdd > 0 && (
+                <span className="text-sm text-text-muted">
+                  (base {formatPrice(product.price)} + {formatPrice(variantPriceAdd)})
+                </span>
+              )}
+              {product.comparePrice && product.comparePrice > product.price && variantPriceAdd === 0 && (
                 <span className="text-xl text-text-muted line-through">
                   {formatPrice(product.comparePrice)}
                 </span>
               )}
-              {discount > 0 && (
+              {discount > 0 && variantPriceAdd === 0 && (
                 <Badge variant="success" className="text-sm">Save {discount}%</Badge>
               )}
             </div>
@@ -233,10 +273,9 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Variant Picker */}
-            {product.variants && product.variants.length > 0 && (
+            {parsedVariants.length > 0 && (
               <div className="space-y-4 mb-6">
-                {product.variants.map((variant: Any) => {
-                  const options: string[] = (() => { try { return JSON.parse(variant.options); } catch { return []; } })();
+                {parsedVariants.map((variant) => {
                   const selected = selectedVariants[variant.name];
                   return (
                     <div key={variant.id}>
@@ -245,17 +284,22 @@ export default function ProductDetailPage() {
                         {selected && <span className="ml-1.5 font-normal text-accent">{selected}</span>}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {options.map((opt: string) => (
+                        {variant.options.map((opt) => (
                           <button
-                            key={opt}
-                            onClick={() => setSelectedVariants((prev) => ({ ...prev, [variant.name]: prev[variant.name] === opt ? "" : opt }))}
+                            key={opt.value}
+                            onClick={() => setSelectedVariants((prev) => ({ ...prev, [variant.name]: prev[variant.name] === opt.value ? "" : opt.value }))}
                             className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
-                              selected === opt
+                              selected === opt.value
                                 ? "bg-accent text-white border-accent shadow-sm"
                                 : "bg-white border-border text-text hover:border-accent/60 hover:bg-surface"
                             }`}
                           >
-                            {opt}
+                            {opt.value}
+                            {opt.priceAdd > 0 && (
+                              <span className={`ml-1 text-xs ${selected === opt.value ? "text-white/80" : "text-accent"}`}>
+                                +{formatPrice(opt.priceAdd)}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>

@@ -57,6 +57,7 @@ export default function ChatBot() {
   const handleAddToCart = (product: ProductDetail) => {
     addItem({
       id: product.id,
+      cartId: product.id,
       name: product.name,
       slug: product.slug,
       price: product.price,

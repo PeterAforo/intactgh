@@ -447,8 +447,8 @@ export default function CheckoutPage() {
             <Link href="/shop">
               <Button size="lg" className="rounded-xl">Continue Shopping</Button>
             </Link>
-            <Link href="/account">
-              <Button variant="outline" size="lg" className="rounded-xl">View Orders</Button>
+            <Link href={`/track-order?orderNumber=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(shipping.email)}`}>
+              <Button variant="outline" size="lg" className="rounded-xl">Track Order</Button>
             </Link>
           </div>
         </motion.div>

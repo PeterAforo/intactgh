@@ -94,6 +94,9 @@ export default function CartPage() {
                         {item.product.name}
                       </h3>
                     </Link>
+                    {item.product.variantLabel && (
+                      <p className="text-xs text-text-muted mb-1">{item.product.variantLabel}</p>
+                    )}
 
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-lg font-bold text-accent">
@@ -110,7 +113,7 @@ export default function CartPage() {
                       {/* Quantity */}
                       <div className="flex items-center border border-border rounded-lg overflow-hidden">
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.product.cartId, item.quantity - 1)}
                           className="px-2.5 py-1.5 hover:bg-surface transition-colors"
                         >
                           <Minus className="w-3.5 h-3.5" />
@@ -119,7 +122,7 @@ export default function CartPage() {
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.product.cartId, item.quantity + 1)}
                           className="px-2.5 py-1.5 hover:bg-surface transition-colors"
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -133,7 +136,7 @@ export default function CartPage() {
 
                       {/* Remove */}
                       <button
-                        onClick={() => removeItem(item.product.id)}
+                        onClick={() => removeItem(item.product.cartId)}
                         className="text-text-muted hover:text-accent transition-colors p-2"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -3,12 +3,14 @@ import { persist } from "zustand/middleware";
 
 export interface CartProduct {
   id: string;
+  cartId: string;         // unique per product+variant combo
   name: string;
   slug: string;
-  price: number;
+  price: number;          // adjusted price (base + variant adds)
   comparePrice?: number | null;
   image: string;
   stock: number;
+  variantLabel?: string;  // e.g. "Color: Red · Storage: 256GB"
 }
 
 export interface CartItemType {
@@ -19,8 +21,8 @@ export interface CartItemType {
 interface CartStore {
   items: CartItemType[];
   addItem: (product: CartProduct, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeItem: (cartId: string) => void;
+  updateQuantity: (cartId: string, quantity: number) => void;
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
@@ -32,11 +34,11 @@ export const useCartStore = create<CartStore>()(
       items: [],
       addItem: (product, quantity = 1) => {
         const items = get().items;
-        const existingItem = items.find((item) => item.product.id === product.id);
+        const existingItem = items.find((item) => item.product.cartId === product.cartId);
         if (existingItem) {
           set({
             items: items.map((item) =>
-              item.product.id === product.id
+              item.product.cartId === product.cartId
                 ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock) }
                 : item
             ),
@@ -45,17 +47,17 @@ export const useCartStore = create<CartStore>()(
           set({ items: [...items, { product, quantity }] });
         }
       },
-      removeItem: (productId) => {
-        set({ items: get().items.filter((item) => item.product.id !== productId) });
+      removeItem: (cartId) => {
+        set({ items: get().items.filter((item) => item.product.cartId !== cartId) });
       },
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (cartId, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(productId);
+          get().removeItem(cartId);
           return;
         }
         set({
           items: get().items.map((item) =>
-            item.product.id === productId
+            item.product.cartId === cartId
               ? { ...item, quantity: Math.min(quantity, item.product.stock) }
               : item
           ),
