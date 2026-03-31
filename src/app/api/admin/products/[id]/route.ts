@@ -7,23 +7,28 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await verifyAdmin(request); if (auth.error) return auth.error;
-  const { id } = await params;
-  const product = await prisma.product.findUnique({
-    where: { id },
-    include: {
-      images: { orderBy: { order: "asc" } },
-      category: true,
-      brand: true,
-      reviews: { include: { user: { select: { name: true } } } },
-      variants: { select: { id: true, name: true, options: true }, orderBy: { createdAt: "asc" } },
-    },
-  });
+  try {
+    const { id } = await params;
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        images: { orderBy: { order: "asc" } },
+        category: true,
+        brand: true,
+        reviews: { include: { user: { select: { name: true } } }, orderBy: { createdAt: "desc" } },
+        variants: { select: { id: true, name: true, options: true }, orderBy: { createdAt: "asc" } },
+      },
+    });
 
-  if (!product) {
-    return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    if (!product) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ product });
+  } catch (error) {
+    console.error("Product GET error:", error);
+    return NextResponse.json({ error: "Failed to load product" }, { status: 500 });
   }
-
-  return NextResponse.json({ product });
 }
 
 export async function PUT(
@@ -35,8 +40,8 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     const {
-      name, slug, description, price, comparePrice, sku, stock,
-      categoryId, brandId, featured, isNew, onSale, tags, specs, status, images, variants,
+      name, slug, description, price, comparePrice, costPrice, sku, stock,
+      categoryId, brandId, featured, isNew, onSale, tags, specs, status, images, variants, videoUrl,
     } = body;
 
     const data: Record<string, unknown> = {};
@@ -45,6 +50,7 @@ export async function PUT(
     if (description !== undefined) data.description = description;
     if (price !== undefined) data.price = parseFloat(price);
     if (comparePrice !== undefined) data.comparePrice = comparePrice ? parseFloat(comparePrice) : null;
+    if (costPrice !== undefined) data.costPrice = costPrice ? parseFloat(costPrice) : null;
     if (sku !== undefined) data.sku = sku;
     if (stock !== undefined) data.stock = parseInt(stock);
     if (categoryId !== undefined) data.categoryId = categoryId;
@@ -55,6 +61,7 @@ export async function PUT(
     if (tags !== undefined) data.tags = tags;
     if (specs !== undefined) data.specs = specs;
     if (status !== undefined) data.status = status;
+    if (videoUrl !== undefined) data.videoUrl = videoUrl || null;
 
     const product = await prisma.product.update({
       where: { id },

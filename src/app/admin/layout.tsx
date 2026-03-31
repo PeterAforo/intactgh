@@ -26,6 +26,7 @@ import {
   Sparkles,
   Gift,
   Briefcase,
+  ShieldCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -43,6 +44,7 @@ const sidebarLinks = [
   { href: "/admin/promotions", label: "Promotions", icon: Megaphone },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/careers", label: "Careers", icon: Briefcase },
+  { href: "/admin/users", label: "Users & Roles", icon: ShieldCheck },
   { href: "/admin/ai-tools", label: "AI Tools", icon: Sparkles },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
@@ -60,7 +62,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     fetch("/api/auth/me").then(r => r.json()).then(d => {
-      if (d.user && d.user.role === "admin") {
+      if (d.user && (d.user.role === "admin" || d.user.role === "staff")) {
         setAdminUser({ name: d.user.name, email: d.user.email });
       } else {
         router.replace("/account?redirect=/admin");
