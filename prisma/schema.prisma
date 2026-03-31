@@ -8,20 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String
-  phone         String?
-  role          String    @default("customer")
-  avatar        String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  orders        Order[]
-  reviews       Review[]
-  addresses     Address[]
-  wishlist      WishlistItem[]
-  cart          CartItem[]
+  id                String    @id @default(cuid())
+  name              String?
+  email             String    @unique
+  password          String
+  phone             String?
+  role              String    @default("customer")
+  avatar            String?
+  emailVerified     Boolean   @default(false)
+  verifyToken       String?   @unique
+  verifyTokenExpiry DateTime?
+  loginAttempts     Int       @default(0)
+  lockedUntil       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  orders            Order[]
+  reviews           Review[]
+  addresses         Address[]
+  wishlist          WishlistItem[]
+  cart              CartItem[]
 }
 
 model Address {
