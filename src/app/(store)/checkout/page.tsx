@@ -27,6 +27,7 @@ import {
   Car,
   Gift,
   X,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +130,9 @@ export default function CheckoutPage() {
   const [giftCardPin, setGiftCardPin] = useState("");
   const [giftCardApplied, setGiftCardApplied] = useState<{ code: string; pin: string; balance: number; applied: number } | null>(null);
   const [giftCardChecking, setGiftCardChecking] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] = useState<{ code: string; title: string; discount: number; type: string } | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
   const [checkoutError, setCheckoutError] = useState("");
 
   useEffect(() => {
@@ -191,8 +195,13 @@ export default function CheckoutPage() {
       : selectedProvider?.baseFee || 0;
   const freeDeliveryThreshold = 3000;
   const finalDeliveryFee = subtotal >= freeDeliveryThreshold && deliveryOption === "standard" ? 0 : deliveryFee;
-  const giftCardDiscount = giftCardApplied ? Math.min(giftCardApplied.applied, subtotal + finalDeliveryFee) : 0;
-  const total = subtotal + finalDeliveryFee - giftCardDiscount;
+  const couponDiscount = couponApplied
+    ? couponApplied.type === "percentage"
+      ? Math.round((subtotal * couponApplied.discount) / 100 * 100) / 100
+      : Math.min(couponApplied.discount, subtotal)
+    : 0;
+  const giftCardDiscount = giftCardApplied ? Math.min(giftCardApplied.applied, subtotal + finalDeliveryFee - couponDiscount) : 0;
+  const total = subtotal + finalDeliveryFee - couponDiscount - giftCardDiscount;
 
   // --- Validation ---
   const validateShipping = useCallback((): boolean => {
@@ -344,7 +353,9 @@ export default function CheckoutPage() {
               street: shipping.street, city: shipping.city,
               region: shipping.region, notes: shipping.notes,
             },
-            subtotal, deliveryFee: finalDeliveryFee, total, giftCardCode: giftCardApplied?.code,
+            subtotal, deliveryFee: finalDeliveryFee, total,
+            giftCardCode: giftCardApplied?.code,
+            couponCode: couponApplied?.code, couponDiscount: couponDiscount || undefined,
             paymentMethod: "canpay",
             ...(loggedInUserId ? { userId: loggedInUserId } : {}),
           }),
@@ -400,6 +411,7 @@ export default function CheckoutPage() {
           total,
           paymentMethod,
           giftCardCode: giftCardApplied?.code,
+          couponCode: couponApplied?.code, couponDiscount: couponDiscount || undefined,
           ...(loggedInUserId ? { userId: loggedInUserId } : {}),
         }),
       });
@@ -1104,6 +1116,53 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
+                {/* Coupon / Promo Code */}
+                <div className="bg-surface rounded-xl p-4 mb-6 border border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Tag className="w-4 h-4 text-gold" />
+                    <p className="text-sm font-semibold text-text">Coupon / Promo Code</p>
+                  </div>
+                  {couponApplied ? (
+                    <div className="flex items-center justify-between bg-purple-50 border border-purple-200 rounded-xl px-3 py-2.5">
+                      <div>
+                        <p className="text-xs font-mono font-bold text-purple-800">{couponApplied.code}</p>
+                        <p className="text-xs text-purple-700">
+                          {couponApplied.type === "percentage"
+                            ? `${couponApplied.discount}% off — saves ${formatPrice(couponDiscount)}`
+                            : `${formatPrice(couponApplied.discount)} off`}
+                        </p>
+                      </div>
+                      <button onClick={() => setCouponApplied(null)} className="p-1 rounded-lg hover:bg-purple-100">
+                        <X className="w-4 h-4 text-purple-700" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Enter coupon code" className="rounded-lg flex-1 font-mono text-xs" />
+                      <Button variant="outline" size="sm" className="rounded-lg shrink-0" disabled={couponChecking}
+                        onClick={async () => {
+                          if (!couponCode.trim()) return;
+                          setCouponChecking(true);
+                          try {
+                            const res = await fetch("/api/promotions/validate", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ code: couponCode.trim() }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) { alert(data.error || "Invalid coupon"); return; }
+                            setCouponApplied({ code: data.code, title: data.title, discount: data.discount, type: data.type });
+                            setCouponCode("");
+                          } catch { alert("Could not validate coupon."); }
+                          finally { setCouponChecking(false); }
+                        }}>
+                        {couponChecking ? "Checking…" : "Apply"}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-between mt-6">
                   <Button variant="ghost" onClick={() => setStep(2)} className="rounded-xl">Back</Button>
                   <Button onClick={() => goToStep(4)} size="lg" className="rounded-xl">
@@ -1254,6 +1313,12 @@ export default function CheckoutPage() {
                     )}
                   </span>
                 </div>
+                {couponApplied && couponDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-600 flex items-center gap-1"><Tag className="w-3.5 h-3.5" />Coupon ({couponApplied.code})</span>
+                    <span className="font-medium text-purple-600">−{formatPrice(couponDiscount)}</span>
+                  </div>
+                )}
                 {giftCardApplied && giftCardDiscount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600 flex items-center gap-1"><Gift className="w-3.5 h-3.5" />Gift Card</span>
