@@ -9,17 +9,31 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "20");
   const search = searchParams.get("q") || "";
   const status = searchParams.get("status");
+  const categorySlug = searchParams.get("category");
 
-  const where: Record<string, unknown> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: Record<string, any> = {};
   if (status) where.status = status;
+  if (categorySlug) {
+    where.AND = [
+      ...(where.AND || []),
+      { OR: [
+        { categoryId: categorySlug },
+        { category: { parentId: categorySlug } },
+      ] },
+    ];
+  }
   if (search) {
-    where.OR = [
-      { name: { contains: search } },
-      { sku: { contains: search } },
-      { description: { contains: search } },
-      { tags: { contains: search } },
-      { brand: { name: { contains: search } } },
-      { category: { name: { contains: search } } },
+    where.AND = [
+      ...(where.AND || []),
+      { OR: [
+        { name: { contains: search, mode: "insensitive" } },
+        { sku: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { tags: { contains: search, mode: "insensitive" } },
+        { brand: { name: { contains: search, mode: "insensitive" } } },
+        { category: { name: { contains: search, mode: "insensitive" } } },
+      ] },
     ];
   }
 

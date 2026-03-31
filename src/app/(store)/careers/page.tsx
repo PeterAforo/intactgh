@@ -11,9 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 const perks = [
-  { icon: Heart, title: "Health Insurance", desc: "Comprehensive medical coverage for you and your family" },
-  { icon: GraduationCap, title: "Learning Budget", desc: "Annual allowance for courses, conferences, and books" },
-  { icon: Zap, title: "Staff Discounts", desc: "Exclusive discounts on all products in our store" },
+  { icon: Zap, title: "Career Growth", desc: "Fast-track your career in Ghana's booming tech industry" },
+  { icon: GraduationCap, title: "Hands-on Training", desc: "Learn directly from experienced professionals and industry leaders" },
+  { icon: Heart, title: "Supportive Team", desc: "Join a close-knit team that celebrates wins together" },
   { icon: Users, title: "Great Culture", desc: "Work with passionate people who love technology" },
 ];
 

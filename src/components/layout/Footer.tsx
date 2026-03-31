@@ -155,14 +155,21 @@ export default function Footer() {
             </div>
 
             <div className="flex items-center gap-3 mt-6">
-              {["Facebook", "Twitter", "Instagram", "YouTube"].map((name, i) => (
+              {[
+                { name: "Facebook", href: "https://www.facebook.com/share/1CV6VqyyYa/", letter: "f" },
+                { name: "Instagram", href: "https://www.instagram.com/intact_ghana?igsh=aGE5ajE0djNna2Nr&utm_source=qr", letter: "IG" },
+                { name: "TikTok", href: "https://www.tiktok.com/@intactghana_?_r=1&_t=ZS-95944g8qPbQ", letter: "TT" },
+                { name: "WhatsApp", href: "https://wa.me/233543645126", letter: "WA" },
+              ].map((social) => (
                 <a
-                  key={i}
-                  href="#"
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent transition-colors text-xs font-bold"
-                  aria-label={name}
+                  aria-label={social.name}
                 >
-                  {name[0]}
+                  {social.letter}
                 </a>
               ))}
             </div>

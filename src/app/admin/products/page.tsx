@@ -286,7 +286,12 @@ export default function AdminProductsPage() {
             className="bg-surface border-0 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent">
             <option value="">All Categories</option>
             {categories.filter((c: Any) => !c.parentId).map((c: Any) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <React.Fragment key={c.id}>
+                <option value={c.id}>{c.name}</option>
+                {(c.children ?? []).map((ch: Any) => (
+                  <option key={ch.id} value={ch.id}>&nbsp;&nbsp;↳ {ch.name}</option>
+                ))}
+              </React.Fragment>
             ))}
           </select>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
