@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, Clock, Send, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,13 @@ export default function ContactPage() {
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+  const [sitePhone, setSitePhone] = useState("+233 543 645 126");
+
+  useEffect(() => {
+    fetch("/api/settings/public").then(r => r.json()).then(d => {
+      if (d.settings?.phone) setSitePhone(d.settings.phone);
+    }).catch(() => {});
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +51,7 @@ export default function ContactPage() {
               {
                 icon: Phone,
                 title: "Call Us",
-                lines: ["+233 543 645 126", "+233 543 008 475"],
+                lines: [sitePhone],
                 color: "bg-accent/10 text-accent",
               },
               {

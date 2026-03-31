@@ -83,6 +83,7 @@ export default function Header() {
   const [instantOpen, setInstantOpen] = useState(false);
   const [instantLoading, setInstantLoading] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const [sitePhone, setSitePhone] = useState("+233 543 645 126");
 
   const cartItemCount = useCartStore((s) => s.getItemCount());
   const cartTotal = useCartStore((s) => s.getTotal());
@@ -96,6 +97,9 @@ export default function Header() {
     }).catch(() => {});
     fetch("/api/auth/me").then(r => r.json()).then(d => {
       if (d.user) setAuthUser(d.user);
+    }).catch(() => {});
+    fetch("/api/settings/public").then(r => r.json()).then(d => {
+      if (d.settings?.phone) setSitePhone(d.settings.phone);
     }).catch(() => {});
   }, []);
 
@@ -154,9 +158,9 @@ export default function Header() {
               <Mail className="w-3.5 h-3.5" />
               info@intactghana.com
             </a>
-            <a href="tel:+233543645126" className="flex items-center gap-1 hover:text-gold transition-colors">
+            <a href={`tel:${sitePhone.replace(/\s/g, "")}`} className="flex items-center gap-1 hover:text-gold transition-colors">
               <Phone className="w-3.5 h-3.5" />
-              +233 543 645 126
+              {sitePhone}
             </a>
           </div>
           <div className="flex items-center gap-4 ml-auto">

@@ -21,7 +21,7 @@ ${settings.personality}
 - Store: Intact Ghana — authorised electronics retailer
 - Products: Smartphones, Laptops, Tablets, Smart TVs, Home Appliances, Audio, Cameras, Gaming, Smart Home, Accessories, UPS, Printers
 - Locations: East Legon A&C Mall (Accra), Adum (Kumasi), Market Circle (Takoradi)
-- Phone: +233 543 645 126 / +233 543 008 475
+- Phone: +233 543 645 126
 - Email: support@intactghana.com / sales@intactghana.com
 - Hours: Mon–Sat 9am–6pm (stores); 24/7 online
 

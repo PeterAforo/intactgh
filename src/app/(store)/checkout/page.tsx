@@ -94,6 +94,16 @@ const GHANA_REGIONS = [
   "Oti", "North East", "Savannah", "Western North",
 ];
 
+const mapStateToRegion = (state: string): string => {
+  if (!state) return "";
+  const clean = state.replace(/\s*Region\s*$/i, "").trim().toLowerCase();
+  return GHANA_REGIONS.find((r) =>
+    r.toLowerCase() === clean ||
+    r.toLowerCase().includes(clean) ||
+    clean.includes(r.toLowerCase())
+  ) || "";
+};
+
 interface FormErrors {
   [key: string]: string;
 }
@@ -119,6 +129,7 @@ export default function CheckoutPage() {
   const [giftCardPin, setGiftCardPin] = useState("");
   const [giftCardApplied, setGiftCardApplied] = useState<{ code: string; pin: string; balance: number; applied: number } | null>(null);
   const [giftCardChecking, setGiftCardChecking] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -228,11 +239,13 @@ export default function CheckoutPage() {
           );
           const data = await res.json();
           if (data.display_name) {
+            const detectedRegion = mapStateToRegion(data.address?.state || "");
             setShipping((prev) => ({
               ...prev,
               gpsAddress: data.display_name,
-              city: data.address?.city || data.address?.town || data.address?.village || prev.city,
+              city: data.address?.city || data.address?.town || data.address?.village || data.address?.suburb || prev.city,
               street: data.address?.road ? `${data.address.house_number || ""} ${data.address.road}`.trim() : prev.street,
+              region: detectedRegion || prev.region,
             }));
           }
         } catch {
@@ -357,12 +370,12 @@ export default function CheckoutPage() {
           window.location.href = cpData.redirectUrl;
           return;
         }
-        // CanPay not configured — show success with the created order
-        if (pendingOrderNumber) {
-          setOrderNumber(pendingOrderNumber);
-          setOrderPlaced(true);
-          clearCart();
-        }
+        // CanPay failed to return a checkout URL — show error, keep order as pending
+        setCheckoutError(
+          `CanPay payment could not be initiated${
+            pendingOrderNumber ? ` (Order #${pendingOrderNumber} reserved)` : ""
+          }. Please contact us on +233 543 645 126 or choose a different payment method.`
+        );
         return;
       }
 
@@ -1183,9 +1196,16 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
+                {checkoutError && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm mb-4">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                    <p>{checkoutError}</p>
+                  </div>
+                )}
+
                 <div className="flex justify-between">
                   <Button variant="ghost" onClick={() => setStep(3)} className="rounded-xl">Back</Button>
-                  <Button onClick={handlePlaceOrder} size="lg" className="rounded-xl" disabled={isProcessing}>
+                  <Button onClick={() => { setCheckoutError(""); handlePlaceOrder(); }} size="lg" className="rounded-xl" disabled={isProcessing}>
                     {isProcessing ? (
                       <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Processing...</>
                     ) : paymentMethod === "hubtel" ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 const featureBadges = [
   { icon: Truck, title: "Free Delivery", desc: "On orders over GH₵3,000" },
   { icon: RotateCcw, title: "Easy Returns", desc: "5 days money return" },
-  { icon: Headphones, title: "24/7 Support", desc: "(+233) 543 008 475" },
+  { icon: Headphones, title: "24/7 Support", desc: "Call us anytime" },
   { icon: ShieldCheck, title: "Safe Payment", desc: "Secure online payment" },
 ];
 
@@ -57,6 +57,13 @@ const footerLinks = {
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [sitePhone, setSitePhone] = useState("+233 543 645 126");
+
+  useEffect(() => {
+    fetch("/api/settings/public").then(r => r.json()).then(d => {
+      if (d.settings?.phone) setSitePhone(d.settings.phone);
+    }).catch(() => {});
+  }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,9 +140,9 @@ export default function Footer() {
               exceptional customer service across Ghana.
             </p>
             <div className="space-y-3">
-              <a href="tel:+233543645126" className="flex items-center gap-3 text-sm text-white/70 hover:text-gold transition-colors">
+              <a href={`tel:${sitePhone.replace(/\s/g, "")}`} className="flex items-center gap-3 text-sm text-white/70 hover:text-gold transition-colors">
                 <Phone className="w-4 h-4 text-accent" />
-                +233 543 645 126
+                {sitePhone}
               </a>
               <a href="mailto:sales@intactghana.com" className="flex items-center gap-3 text-sm text-white/70 hover:text-gold transition-colors">
                 <Mail className="w-4 h-4 text-accent" />

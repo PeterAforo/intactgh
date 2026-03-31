@@ -145,7 +145,7 @@ export const knowledgeBase: KnowledgeEntry[] = [
     id: "faq_041",
     question: "How do I contact Intact Ghana?",
     answer:
-      "Phone: +233 543 645 126 or +233 543 008 475. Email: support@intactghana.com or sales@intactghana.com. You can also use the chat widget or the Contact page on our website.",
+      "Phone: +233 543 645 126. Email: support@intactghana.com or sales@intactghana.com. You can also use the chat widget or the Contact page on our website.",
     tags: ["contact", "phone", "email", "support"],
     category: "contact",
   },
