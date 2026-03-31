@@ -38,7 +38,22 @@ function createTransporter() {
   });
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Generic send helper (used by gift-card fulfillment, etc.) ────────────
+export async function sendEmail(to: string, subject: string, html: string) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn("[Email] SMTP not configured, skipping email to:", to);
+    return;
+  }
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM ?? `"Intact Ghana" <${process.env.SMTP_USER}>`,
+    to,
+    subject,
+    html,
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
 const GHS = (n: number) => `GH₵${n.toFixed(2)}`;
 
 const PAYMENT_LABELS: Record<string, string> = {

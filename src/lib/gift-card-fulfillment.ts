@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { sendEmail } from "./gift-card-email";
+import { sendEmail } from "./email";
 import { sendSMS } from "./sms";
 
 // Gift card category IDs — products in these categories trigger auto-generation
