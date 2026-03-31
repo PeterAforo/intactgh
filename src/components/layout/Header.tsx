@@ -45,6 +45,7 @@ import {
   Home,
   Layers,
   FolderTree,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +78,7 @@ export default function Header() {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [categories, setCategories] = useState<Cat[]>([]);
-  const [authUser, setAuthUser] = useState<{ name?: string; email?: string } | null>(null);
+  const [authUser, setAuthUser] = useState<{ name?: string; email?: string; role?: string } | null>(null);
   const [hoveredCat, setHoveredCat] = useState<Cat | null>(null);
   const [instant, setInstant] = useState<{ products: Cat[]; brands: Cat[]; categories: Cat[] } | null>(null);
   const [instantOpen, setInstantOpen] = useState(false);
@@ -96,7 +97,7 @@ export default function Header() {
       if (d.categories) setCategories(d.categories);
     }).catch(() => {});
     fetch("/api/auth/me").then(r => r.json()).then(d => {
-      if (d.user) setAuthUser(d.user);
+      if (d.user) setAuthUser({ name: d.user.name, email: d.user.email, role: d.user.role });
     }).catch(() => {});
     fetch("/api/settings/public").then(r => r.json()).then(d => {
       if (d.settings?.phone) setSitePhone(d.settings.phone);
@@ -309,6 +310,16 @@ export default function Header() {
                 </span>
               )}
             </Link>
+
+            {mounted && authUser && (authUser.role === "admin" || authUser.role === "staff") && (
+              <Link
+                href="/admin"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-full hover:bg-primary-light transition-colors"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Admin</span>
+              </Link>
+            )}
 
             <Link
               href="/account"
@@ -555,6 +566,16 @@ export default function Header() {
               </div>
 
               <div className="p-4 border-t border-border space-y-2">
+                {mounted && authUser && (authUser.role === "admin" || authUser.role === "staff") && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                  >
+                    <LayoutDashboard className="w-5 h-5 text-primary" />
+                    <span className="font-medium text-primary">Admin Dashboard</span>
+                  </Link>
+                )}
                 <Link
                   href="/account"
                   onClick={() => setMobileMenuOpen(false)}
