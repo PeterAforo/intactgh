@@ -32,13 +32,25 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const refTrx = request.nextUrl.searchParams.get("ref_trx");
-  const status = request.nextUrl.searchParams.get("status");
+  const status = request.nextUrl.searchParams.get("status")?.toLowerCase();
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const successUrl = new URL("/checkout/success", baseUrl);
-  if (refTrx) successUrl.searchParams.set("ref", refTrx);
-  if (status) successUrl.searchParams.set("status", status);
-  successUrl.searchParams.set("method", "canpay");
+  const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/[^/]*$/, "") || "";
+  const baseUrl = origin || process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") || "https://www.intactghana.com";
 
-  return NextResponse.redirect(successUrl.toString());
+  console.log("[CanPay Callback GET] ref:", refTrx, "status:", status);
+
+  // Only redirect to success for confirmed payments
+  if (status === "success" || status === "completed" || status === "paid") {
+    const successUrl = new URL("/checkout/success", baseUrl);
+    if (refTrx) successUrl.searchParams.set("ref", refTrx);
+    successUrl.searchParams.set("method", "canpay");
+    return NextResponse.redirect(successUrl.toString());
+  }
+
+  // Cancelled / failed / any other status → redirect to checkout with error
+  const checkoutUrl = new URL("/checkout/success", baseUrl);
+  if (refTrx) checkoutUrl.searchParams.set("ref", refTrx);
+  checkoutUrl.searchParams.set("method", "canpay");
+  checkoutUrl.searchParams.set("status", status || "cancelled");
+  return NextResponse.redirect(checkoutUrl.toString());
 }
