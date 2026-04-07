@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatPrice, getDiscountPercentage } from "@/lib/utils";
 import { useCartStore, type CartProduct } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
+import { useCartPopupStore } from "@/store/cart-popup-store";
 import ProductCard from "@/components/products/ProductCard";
 import ReviewsSection from "@/components/products/ReviewsSection";
 
@@ -44,6 +45,7 @@ export default function ProductDetailPage() {
 
   const imageRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
+  const openCartPopup = useCartPopupStore((s) => s.open);
   const toggleWishlist = useWishlistStore((s) => s.toggleItemDB);
   const isInWishlist = useWishlistStore((s) => product ? s.isInWishlist(product.id) : false);
 
@@ -123,8 +125,7 @@ export default function ProductDetailPage() {
       variantLabel: variantLabel || undefined,
     };
     addItem(cartProduct, quantity);
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+    openCartPopup(cartProduct, quantity);
   };
 
   return (

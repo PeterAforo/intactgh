@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { formatPrice, getDiscountPercentage } from "@/lib/utils";
 import { useCartStore, type CartProduct } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
+import { useCartPopupStore } from "@/store/cart-popup-store";
 interface ProductData {
   id: string;
   name: string;
@@ -35,6 +36,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem);
+  const openCartPopup = useCartPopupStore((s) => s.open);
   const toggleWishlist = useWishlistStore((s) => s.toggleItemDB);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist(product.id));
 
@@ -56,6 +58,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       stock: product.stock,
     };
     addItem(cartProduct);
+    openCartPopup(cartProduct);
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {

@@ -9,12 +9,14 @@ import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useCartStore, type CartProduct } from "@/store/cart-store";
+import { useCartPopupStore } from "@/store/cart-popup-store";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
 export default function WishlistPage() {
   const { items, removeItemDB, removeItem, clearWishlist } = useWishlistStore();
   const addToCart = useCartStore((s) => s.addItem);
+  const openCartPopup = useCartPopupStore((s) => s.open);
   const [wishlistProducts, setWishlistProducts] = useState<Any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -73,6 +75,7 @@ export default function WishlistPage() {
       stock: product.stock,
     };
     addToCart(cartProduct);
+    openCartPopup(cartProduct);
   };
 
   return (

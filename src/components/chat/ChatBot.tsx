@@ -18,6 +18,7 @@ import TypingIndicator from "./TypingIndicator";
 import { CHATBOT_CONFIG } from "@/lib/chatbot-config";
 import type { ProductDetail } from "@/lib/chatbot/types";
 import { chatAnalytics } from "@/lib/chatbot/analytics";
+import { useCartPopupStore } from "@/store/cart-popup-store";
 import { useCartStore } from "@/store/cart-store";
 
 function playNotificationSound() {
@@ -53,6 +54,7 @@ export default function ChatBot() {
   const idleShownRef = useRef(false);
   const { messages, isLoading, sendMessage, resetChat, confirmAddToCart } = useChatbot();
   const { addItem, getItemCount } = useCartStore();
+  const openCartPopup = useCartPopupStore((s) => s.open);
 
   const handleAddToCart = (product: ProductDetail) => {
     addItem({
@@ -67,6 +69,16 @@ export default function ChatBot() {
     });
     confirmAddToCart(product.name, getItemCount() + 1);
     chatAnalytics.addToCartClicked(product.id, product.name, product.price);
+    openCartPopup({
+      id: product.id,
+      cartId: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      comparePrice: product.comparePrice,
+      image: product.image ?? "",
+      stock: product.stock,
+    });
   };
 
   // Auto-scroll to bottom on new messages
