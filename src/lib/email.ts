@@ -6,6 +6,7 @@ export interface OrderEmailItem {
   quantity: number;
   price: number;
   imageUrl?: string;
+  variantLabel?: string;
 }
 
 export interface OrderEmailData {
@@ -121,6 +122,7 @@ function itemsTable(items: OrderEmailItem[]): string {
     </td>
     <td style="padding:12px 8px;border-bottom:1px solid #f0f2f5;vertical-align:middle;">
       <p style="margin:0;font-size:14px;font-weight:600;color:#1a1d23;">${item.name}</p>
+      ${item.variantLabel ? `<p style="margin:2px 0 0;font-size:12px;color:#7a8499;">${item.variantLabel}</p>` : ''}
     </td>
     <td style="padding:12px 8px;border-bottom:1px solid #f0f2f5;text-align:center;vertical-align:middle;">
       <span style="font-size:14px;color:#4a5568;">${item.quantity}</span>

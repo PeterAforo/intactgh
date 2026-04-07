@@ -346,7 +346,7 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, price: i.product.price })),
+            items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, price: i.product.price, variantLabel: i.product.variantLabel || null })),
             shipping: {
               firstName: shipping.firstName, lastName: shipping.lastName,
               email: shipping.email, phone: shipping.phone,
@@ -395,7 +395,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, price: i.product.price })),
+          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity, price: i.product.price, variantLabel: i.product.variantLabel || null })),
           shipping: {
             firstName: shipping.firstName,
             lastName: shipping.lastName,
@@ -1239,12 +1239,13 @@ export default function CheckoutPage() {
                   </h3>
                   <div className="space-y-3">
                     {items.map((item) => (
-                      <div key={item.product.id} className="flex items-center gap-3">
+                      <div key={item.product.cartId} className="flex items-center gap-3">
                         <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-surface shrink-0">
                           <Image src={item.product.image} alt={item.product.name} fill className="object-cover" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-text truncate">{item.product.name}</p>
+                          {item.product.variantLabel && <p className="text-xs text-accent">{item.product.variantLabel}</p>}
                           <p className="text-xs text-text-muted">Qty: {item.quantity}</p>
                         </div>
                         <span className="text-sm font-bold text-text shrink-0">
@@ -1287,10 +1288,11 @@ export default function CheckoutPage() {
 
               <div className="space-y-3 mb-4">
                 {items.map((item) => (
-                  <div key={item.product.id} className="flex items-center justify-between text-sm">
-                    <span className="text-text-light truncate mr-2">
-                      {item.product.name} x{item.quantity}
-                    </span>
+                  <div key={item.product.cartId} className="flex items-center justify-between text-sm">
+                    <div className="truncate mr-2">
+                      <span className="text-text-light">{item.product.name} x{item.quantity}</span>
+                      {item.product.variantLabel && <p className="text-xs text-text-muted">{item.product.variantLabel}</p>}
+                    </div>
                     <span className="font-medium text-text shrink-0">
                       {formatPrice(item.product.price * item.quantity)}
                     </span>

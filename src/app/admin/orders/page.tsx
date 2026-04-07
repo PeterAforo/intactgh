@@ -208,6 +208,7 @@ export default function AdminOrdersPage() {
                   <div key={item.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>
                       <p className="text-sm font-medium">{item.product?.name || "Product"}</p>
+                      {item.variantLabel && <p className="text-xs text-accent">{item.variantLabel}</p>}
                       <p className="text-xs text-text-muted">Qty: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-semibold">{formatPrice(item.price * item.quantity)}</p>

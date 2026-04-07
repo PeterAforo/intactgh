@@ -64,10 +64,11 @@ export async function POST(request: NextRequest) {
         shippingRegion: shipping.region || "",
         notes: shipping.notes || null,
         items: {
-          create: items.map((item: { productId: string; quantity: number; price: number }) => ({
+          create: items.map((item: { productId: string; quantity: number; price: number; variantLabel?: string }) => ({
             productId: item.productId,
             quantity: item.quantity,
             price: item.price,
+            variantLabel: item.variantLabel || null,
           })),
         },
       },
@@ -139,6 +140,7 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
       quantity: item.quantity,
       price: item.price,
       imageUrl: item.product.images?.[0]?.url ?? undefined,
+      variantLabel: item.variantLabel ?? undefined,
     })),
   };
 
