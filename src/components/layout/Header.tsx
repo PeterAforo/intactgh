@@ -335,7 +335,9 @@ export default function Header() {
 
             <Link
               href="/cart"
-              className="relative flex items-center gap-2 bg-accent text-white px-3 py-2 md:px-4 md:py-2.5 rounded-full hover:bg-accent-hover transition-colors"
+              className={`relative flex items-center gap-2 text-white px-3 py-2 md:px-4 md:py-2.5 rounded-full transition-colors ${
+                mounted && cartItemCount > 0 ? "bg-red-600 hover:bg-red-700" : "bg-accent hover:bg-accent-hover"
+              }`}
             >
               <ShoppingCart className="w-5 h-5" />
               <span className="hidden md:inline text-sm font-medium">
