@@ -49,21 +49,26 @@ export async function GET(request: NextRequest) {
     where.price = priceFilter;
   }
   if (search) {
+    // Split into words so "DELL LATITUDE 7330" matches "DELL  LATITUDE 7330"
+    const words = search.trim().split(/\s+/).filter(Boolean);
     // Pre-lookup IDs — Prisma/SQLite can't resolve relation filters inside OR reliably
     const [matchingBrands, matchingCategories] = await Promise.all([
-      prisma.brand.findMany({ where: { name: { contains: search, mode: "insensitive" } }, select: { id: true } }),
-      prisma.category.findMany({ where: { name: { contains: search, mode: "insensitive" } }, select: { id: true } }),
+      prisma.brand.findMany({ where: { OR: words.map(w => ({ name: { contains: w, mode: "insensitive" as const } })) }, select: { id: true } }),
+      prisma.category.findMany({ where: { OR: words.map(w => ({ name: { contains: w, mode: "insensitive" as const } })) }, select: { id: true } }),
     ]);
     const brandIds = matchingBrands.map((b) => b.id);
     const catIds = matchingCategories.map((c) => c.id);
-    where.OR = [
-      { name: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-      { tags: { contains: search, mode: "insensitive" } },
-      { sku: { contains: search, mode: "insensitive" } },
-      ...(brandIds.length ? [{ brandId: { in: brandIds } }] : []),
-      ...(catIds.length ? [{ categoryId: { in: catIds } }] : []),
-    ];
+    const searchConditions: Prisma.ProductWhereInput[] = words.map((word) => ({
+      OR: [
+        { name: { contains: word, mode: "insensitive" as const } },
+        { description: { contains: word, mode: "insensitive" as const } },
+        { tags: { contains: word, mode: "insensitive" as const } },
+        { sku: { contains: word, mode: "insensitive" as const } },
+        ...(brandIds.length ? [{ brandId: { in: brandIds } }] : []),
+        ...(catIds.length ? [{ categoryId: { in: catIds } }] : []),
+      ],
+    }));
+    where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), ...searchConditions];
   }
 
   let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: "desc" };

@@ -24,17 +24,21 @@ export async function GET(request: NextRequest) {
     ];
   }
   if (search) {
-    where.AND = [
-      ...(where.AND || []),
-      { OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { tags: { contains: search, mode: "insensitive" } },
-        { brand: { name: { contains: search, mode: "insensitive" } } },
-        { category: { name: { contains: search, mode: "insensitive" } } },
-      ] },
-    ];
+    // Split into words so "DELL LATITUDE 7330" matches "DELL  LATITUDE 7330"
+    const words = search.trim().split(/\s+/).filter(Boolean);
+    for (const word of words) {
+      where.AND = [
+        ...(where.AND || []),
+        { OR: [
+          { name: { contains: word, mode: "insensitive" } },
+          { sku: { contains: word, mode: "insensitive" } },
+          { description: { contains: word, mode: "insensitive" } },
+          { tags: { contains: word, mode: "insensitive" } },
+          { brand: { name: { contains: word, mode: "insensitive" } } },
+          { category: { name: { contains: word, mode: "insensitive" } } },
+        ] },
+      ];
+    }
   }
 
   const [products, total] = await Promise.all([
