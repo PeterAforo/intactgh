@@ -204,7 +204,7 @@ export default function ProductDetailPage() {
             className="flex flex-col"
           >
             {product.brand && (
-              <Link href={`/brands/${product.brand.slug}`} className="text-accent font-semibold text-sm uppercase tracking-wider mb-2 hover:underline">
+              <Link href={`/shop?brand=${product.brand.slug}`} className="text-accent font-semibold text-sm uppercase tracking-wider mb-2 hover:underline">
                 {product.brand.name}
               </Link>
             )}
