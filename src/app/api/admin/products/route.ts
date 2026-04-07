@@ -71,16 +71,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Auto-generate sequential SKU: INT00001 – INT99999
-    let finalSku = sku?.trim() || "";
-    if (!finalSku) {
-      const count = await prisma.product.count();
-      finalSku = `INT${String((count + 1) % 99999 || 99999).padStart(5, "0")}`;
-      // Ensure uniqueness in case of gaps/deletes
-      const existing = await prisma.product.findFirst({ where: { sku: finalSku } });
-      if (existing) {
-        finalSku = `INT${String(((count + Date.now()) % 99999) + 1).padStart(5, "0")}`;
-      }
+    // Auto-generate sequential SKU: INT0001 format (total products + 1)
+    const count = await prisma.product.count();
+    let nextNum = count + 1;
+    let finalSku = `INT${String(nextNum).padStart(4, "0")}`;
+    // Ensure uniqueness in case of gaps/deletes
+    while (await prisma.product.findFirst({ where: { sku: finalSku } })) {
+      nextNum++;
+      finalSku = `INT${String(nextNum).padStart(4, "0")}`;
     }
 
     const product = await prisma.product.create({
@@ -109,14 +107,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (variants && variants.length > 0) {
-      const cleanVariants = variants.filter((v: { name: string; options: string[] }) => v.name?.trim() && v.options?.some((o: string) => o.trim()));
+      const cleanVariants = variants.filter((v: { name: string; options: ({ value: string; priceAdd: number } | string)[] }) =>
+        v.name?.trim() && v.options?.some((o) => typeof o === "string" ? o.trim() : o.value?.trim())
+      );
       if (cleanVariants.length > 0) {
         await prisma.productVariant.createMany({
-          data: cleanVariants.map((v: { name: string; options: string[] }) => ({
-            productId: product.id,
-            name: v.name.trim(),
-            options: JSON.stringify(v.options.filter((o: string) => o.trim())),
-          })),
+          data: cleanVariants.map((v: { name: string; options: ({ value: string; priceAdd: number } | string)[] }) => {
+            const opts = v.options
+              .map((o) => (typeof o === "string" ? { value: o, priceAdd: 0 } : o))
+              .filter((o) => o.value.trim());
+            return {
+              productId: product.id,
+              name: v.name.trim(),
+              options: JSON.stringify(opts),
+            };
+          }),
         });
       }
     }

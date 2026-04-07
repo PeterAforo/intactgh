@@ -51,7 +51,7 @@ export async function PUT(
     if (price !== undefined) data.price = parseFloat(price);
     if (comparePrice !== undefined) data.comparePrice = comparePrice ? parseFloat(comparePrice) : null;
     if (costPrice !== undefined) data.costPrice = costPrice ? parseFloat(costPrice) : null;
-    if (sku !== undefined) data.sku = sku;
+    // SKU is auto-generated and cannot be edited
     if (stock !== undefined) data.stock = parseInt(stock);
     if (categoryId !== undefined) data.categoryId = categoryId;
     if (brandId !== undefined) data.brandId = brandId || null;
@@ -86,11 +86,17 @@ export async function PUT(
       await prisma.productVariant.deleteMany({ where: { productId: id } });
       if (variants.length > 0) {
         await prisma.productVariant.createMany({
-          data: variants.map((v: { name: string; options: string[] }) => ({
-            productId: id,
-            name: v.name.trim(),
-            options: JSON.stringify(v.options.filter((o: string) => o.trim())),
-          })),
+          data: variants.map((v: { name: string; options: { value: string; priceAdd: number }[] | string[] }) => {
+            // Support both {value, priceAdd} objects and plain strings
+            const opts = v.options
+              .map((o) => (typeof o === "string" ? { value: o, priceAdd: 0 } : o))
+              .filter((o) => o.value.trim());
+            return {
+              productId: id,
+              name: v.name.trim(),
+              options: JSON.stringify(opts),
+            };
+          }),
         });
       }
     }

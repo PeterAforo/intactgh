@@ -566,7 +566,8 @@ export default function EditProductPage() {
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-text">SKU</label>
               </div>
-              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="e.g. INT00001" className="rounded-lg font-mono text-sm" />
+              <Input value={sku} disabled className="rounded-lg font-mono text-sm bg-surface text-text-muted cursor-not-allowed" />
+              <p className="text-xs text-text-muted mt-1">Auto-generated. Cannot be edited.</p>
             </div>
           </motion.div>
         </div>

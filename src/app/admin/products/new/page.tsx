@@ -39,11 +39,6 @@ function applyCloudinaryTransforms(url: string, opts: AiOptions): string {
   return url.replace("/upload/", `/upload/${t.join("/")}/`);
 }
 
-function generateSKU(): string {
-  const num = (Date.now() % 99999) + 1;
-  return `INT${String(num).padStart(5, "0")}`;
-}
-
 function generateTags(name: string, categoryName: string, brandName: string): string {
   const stopWords = new Set(["the", "a", "an", "and", "or", "in", "on", "at", "to", "for", "of", "with"]);
   const words = [name, categoryName, brandName]
@@ -143,11 +138,6 @@ export default function NewProductPage() {
     fetch("/api/admin/brands").then(r => r.json()).then(d => d.brands && setBrands(d.brands)).catch(() => {});
   }, []);
 
-  // ── Auto-generate SKU when name changes (user can override) ───────────────
-  useEffect(() => {
-    if (name && !sku) setSku(generateSKU());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name]);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   const selectedCatName = categories.find((c: Any) => c.id === categoryId)?.name
@@ -569,13 +559,9 @@ export default function NewProductPage() {
             <div className="mt-4">
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-sm font-medium text-text">SKU</label>
-                <button onClick={() => setSku(generateSKU())}
-                  className="text-xs text-accent hover:underline flex items-center gap-1">
-                  <RefreshCw className="w-3 h-3" />Regenerate
-                </button>
               </div>
-              <Input value={sku} onChange={(e) => setSku(e.target.value)} placeholder="Auto-generated" className="rounded-lg font-mono text-sm" />
-              <p className="text-xs text-text-muted mt-1">Auto-generated from product name. You can edit it.</p>
+              <Input value="Auto-generated on save" disabled className="rounded-lg font-mono text-sm bg-surface text-text-muted cursor-not-allowed" />
+              <p className="text-xs text-text-muted mt-1">SKU will be auto-generated in INT0001 format when saved.</p>
             </div>
           </motion.div>
         </div>
