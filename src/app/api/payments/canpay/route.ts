@@ -25,7 +25,9 @@ export async function POST(request: NextRequest) {
     const merchantKey = process.env.CANPAY_MERCHANT_KEY;
     const apiKey = process.env.CANPAY_API_KEY;
     const environment = process.env.CANPAY_ENVIRONMENT || "production";
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    // Derive base URL from the incoming request so callback always matches the live domain
+    const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/[^/]*$/, "") || "";
+    const baseUrl = origin || process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") || "https://www.intactghana.com";
 
     // Use real order number if provided so callback can match it to DB order
     const reference = orderNumber || `ORDER_${Date.now()}`;
@@ -50,6 +52,8 @@ export async function POST(request: NextRequest) {
       callback_url: callbackUrl,
     };
 
+    console.log("[CanPay] Initiating payment:", { reference, amount: canpayPayload.payment_amount, callbackUrl });
+
     const canpayResponse = await fetch(`${canpayBaseUrl}/initiate-payment`, {
       method: "POST",
       headers: {
@@ -61,7 +65,11 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(canpayPayload),
     });
 
-    const canpayData = await canpayResponse.json();
+    const canpayText = await canpayResponse.text();
+    let canpayData;
+    try { canpayData = JSON.parse(canpayText); } catch { canpayData = { raw: canpayText }; }
+
+    console.log("[CanPay] Response status:", canpayResponse.status, "body:", canpayText.slice(0, 500));
 
     // CanPay returns a checkout URL to redirect the user to
     const redirectUrl =
@@ -78,13 +86,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.error("CanPay error response:", canpayData);
+    const apiError = canpayData?.message || canpayData?.error || canpayData?.data?.message || "No checkout URL returned";
+    console.error("[CanPay] Error:", canpayResponse.status, canpayData);
     return NextResponse.json(
       {
-        error: "Failed to initiate CanPay payment — no checkout URL returned",
+        error: `CanPay error: ${apiError}`,
         details: canpayData,
       },
-      { status: 500 }
+      { status: 502 }
     );
   } catch (error) {
     console.error("CanPay payment error:", error);

@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
 
     const hubtelAuth = process.env.HUBTEL_AUTH_BASIC;
     const merchantAccount = process.env.HUBTEL_MERCHANT_ACCOUNT || "2017118";
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    // Derive base URL from the incoming request so callbacks always match the live domain
+    const origin = request.headers.get("origin") || request.headers.get("referer")?.replace(/\/[^/]*$/, "") || "";
+    const baseUrl = origin || process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/$/, "") || "https://www.intactghana.com";
 
     // Dev mode fallback if no Hubtel credentials
     if (!hubtelAuth) {

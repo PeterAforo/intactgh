@@ -380,8 +380,9 @@ export default function CheckoutPage() {
           return;
         }
         // CanPay failed to return a checkout URL — show error, keep order as pending
+        const cpError = cpData.error || "CanPay payment could not be initiated";
         setCheckoutError(
-          `CanPay payment could not be initiated${
+          `${cpError}${
             pendingOrderNumber ? ` (Order #${pendingOrderNumber} reserved)` : ""
           }. Please contact us on +233 543 645 126 or choose a different payment method.`
         );
