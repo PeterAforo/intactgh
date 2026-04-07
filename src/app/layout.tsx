@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import CartPopupProvider from "@/components/cart/CartPopupProvider";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -58,6 +59,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         {children}
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+        <CartPopupProvider />
       </body>
     </html>
   );
