@@ -129,7 +129,7 @@ export default function CareersPage() {
                       <h3 className="font-bold text-text text-lg">{pos.title}</h3>
                       <Badge variant="outline" className="text-xs">{pos.type}</Badge>
                     </div>
-                    <p className="text-sm text-text-muted mb-2 line-clamp-2">{pos.description}</p>
+                    <div className="text-sm text-text-muted mb-2 line-clamp-2 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: pos.description }} />
                     <div className="flex items-center gap-4 text-xs text-text-light">
                       <span className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{pos.department}</span>
                       <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{pos.location}</span>
@@ -153,7 +153,7 @@ export default function CareersPage() {
                       className="overflow-hidden border-t border-border/50">
                       <div className="p-6 pt-4">
                         <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Requirements</p>
-                        <p className="text-sm text-text whitespace-pre-line">{pos.requirements}</p>
+                        <div className="text-sm text-text prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: pos.requirements }} />
                       </div>
                     </motion.div>
                   )}

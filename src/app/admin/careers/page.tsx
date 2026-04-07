@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
@@ -293,15 +294,11 @@ export default function AdminCareersPage() {
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-text block mb-1.5">Description *</label>
-                    <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                      rows={4} placeholder="Describe the role and responsibilities..."
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+                    <RichTextEditor value={form.description} onChange={(v: string) => setForm(p => ({ ...p, description: v }))} placeholder="Describe the role and responsibilities..." />
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-text block mb-1.5">Requirements</label>
-                    <textarea value={form.requirements} onChange={e => setForm(p => ({ ...p, requirements: e.target.value }))}
-                      rows={3} placeholder="List qualifications, skills, experience required..."
-                      className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+                    <RichTextEditor value={form.requirements} onChange={(v: string) => setForm(p => ({ ...p, requirements: v }))} placeholder="List qualifications, skills, experience required..." simple />
                   </div>
                 </div>
                 <div className="flex gap-3 pt-2">

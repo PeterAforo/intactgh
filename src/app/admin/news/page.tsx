@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
@@ -83,7 +84,7 @@ export default function AdminNewsPage() {
               <div><label className="text-sm font-medium text-text block mb-1.5">Slug</label><Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="post-slug" className="rounded-lg" /></div>
             </div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Excerpt</label><Input value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Short description" className="rounded-lg" /></div>
-            <div><label className="text-sm font-medium text-text block mb-1.5">Content</label><textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your blog post..." rows={8} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" /></div>
+            <div><label className="text-sm font-medium text-text block mb-1.5">Content</label><RichTextEditor value={content} onChange={setContent} placeholder="Write your blog post..." minHeight="300px" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Featured Image URL</label><Input value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://..." className="rounded-lg" /></div>
             <div className="flex gap-3">
               <Button onClick={() => handleSubmit(true)} disabled={saving} className="rounded-lg">{saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}{editId ? "Update" : "Publish"}</Button>

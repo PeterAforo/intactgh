@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 import toast from "react-hot-toast";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -364,13 +365,7 @@ export default function AdminCategoriesPage() {
               {/* Description */}
               <div>
                 <label className="text-xs font-semibold text-text-muted uppercase tracking-wide block mb-1.5">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Optional description"
-                  rows={2}
-                  className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none"
-                />
+                <RichTextEditor value={description} onChange={setDescription} placeholder="Optional description" simple minHeight="100px" />
               </div>
 
               {/* Featured — main only */}

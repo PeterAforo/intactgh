@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
@@ -127,7 +128,7 @@ export default function AdminBrandsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-text block mb-1.5">Description</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brand description" rows={3} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+                <RichTextEditor value={description} onChange={setDescription} placeholder="Brand description" simple minHeight="120px" />
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="rounded border-border text-accent focus:ring-accent" />

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
@@ -92,7 +93,7 @@ export default function AdminPromotionsPage() {
             <div><label className="text-sm font-medium text-text block mb-1.5">Discount Value</label><Input type="number" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="0" className="rounded-lg" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Start Date</label><Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="rounded-lg" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">End Date</label><Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-lg" /></div>
-            <div className="md:col-span-2"><label className="text-sm font-medium text-text block mb-1.5">Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Promotion details..." rows={3} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" /></div>
+            <div className="md:col-span-2"><label className="text-sm font-medium text-text block mb-1.5">Description</label><RichTextEditor value={description} onChange={setDescription} placeholder="Promotion details..." simple minHeight="120px" /></div>
           </div>
           <label className="flex items-center gap-2 cursor-pointer mt-4">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="rounded border-border text-accent focus:ring-accent" />

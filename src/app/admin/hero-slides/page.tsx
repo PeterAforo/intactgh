@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
@@ -108,7 +109,7 @@ export default function AdminHeroSlidesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><label className="text-sm font-medium text-text block mb-1.5">Title</label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Slide title" className="rounded-lg" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Subtitle</label><Input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="Slide subtitle" className="rounded-lg" /></div>
-            <div className="md:col-span-2"><label className="text-sm font-medium text-text block mb-1.5">Description</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Slide description" rows={3} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" /></div>
+            <div className="md:col-span-2"><label className="text-sm font-medium text-text block mb-1.5">Description</label><RichTextEditor value={description} onChange={setDescription} placeholder="Slide description" simple minHeight="120px" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Button Text</label><Input value={buttonText} onChange={(e) => setButtonText(e.target.value)} placeholder="e.g. Shop Now" className="rounded-lg" /></div>
             <div><label className="text-sm font-medium text-text block mb-1.5">Button Link</label><Input value={buttonLink} onChange={(e) => setButtonLink(e.target.value)} placeholder="e.g. /shop" className="rounded-lg" /></div>
             <div className="md:col-span-2">

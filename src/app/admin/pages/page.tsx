@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
@@ -81,7 +82,7 @@ export default function AdminPagesPage() {
               <div><label className="text-sm font-medium text-text block mb-1.5">Title</label><Input value={title} onChange={(e) => { setTitle(e.target.value); if (!editId) setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "")); }} placeholder="Page title" className="rounded-lg" /></div>
               <div><label className="text-sm font-medium text-text block mb-1.5">Slug</label><Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="page-slug" className="rounded-lg" /></div>
             </div>
-            <div><label className="text-sm font-medium text-text block mb-1.5">Content</label><textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Page content (supports HTML)..." rows={8} className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none font-mono" /></div>
+            <div><label className="text-sm font-medium text-text block mb-1.5">Content</label><RichTextEditor value={content} onChange={setContent} placeholder="Page content..." minHeight="300px" /></div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><label className="text-sm font-medium text-text block mb-1.5">Meta Title</label><Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder="SEO title" className="rounded-lg" /></div>
               <div><label className="text-sm font-medium text-text block mb-1.5">Meta Description</label><Input value={metaDesc} onChange={(e) => setMetaDesc(e.target.value)} placeholder="SEO description" className="rounded-lg" /></div>

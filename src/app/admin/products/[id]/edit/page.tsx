@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
+import RichTextEditor from "@/components/ui/rich-text-editor";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
 
@@ -314,9 +315,7 @@ export default function EditProductPage() {
               ))}
             </div>
             {activeTab === "description" && (
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={6}
-                placeholder="Product description…"
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent resize-none" />
+              <RichTextEditor value={description} onChange={setDescription} placeholder="Product description…" />
             )}
             {activeTab === "specs" && (
               <div className="space-y-2">

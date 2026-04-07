@@ -81,7 +81,7 @@ export default function PromotionsPage() {
                   <Icon className="w-8 h-8 mb-4 opacity-80" />
                   <h3 className="text-xl font-bold mb-2">{promo.title}</h3>
                   {promo.description && (
-                    <p className="text-white/80 text-sm mb-4 line-clamp-2">{promo.description}</p>
+                    <div className="text-white/80 text-sm mb-4 line-clamp-2" dangerouslySetInnerHTML={{ __html: promo.description }} />
                   )}
                   <div className="bg-white/20 rounded-lg px-3 py-2 inline-flex items-center gap-2 mb-4">
                     <Percent className="w-4 h-4" />
