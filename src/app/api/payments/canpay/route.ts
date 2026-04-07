@@ -73,8 +73,10 @@ export async function POST(request: NextRequest) {
 
     // CanPay returns a checkout URL to redirect the user to
     const redirectUrl =
+      canpayData?.payment_url ||
       canpayData?.checkout_url ||
       canpayData?.data?.checkout_url ||
+      canpayData?.data?.payment_url ||
       canpayData?.redirect_url ||
       canpayData?.data?.redirect_url;
 
