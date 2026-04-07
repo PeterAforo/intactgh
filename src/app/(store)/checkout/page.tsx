@@ -42,8 +42,6 @@ const STORE_LOCATION = { lat: 5.6369, lng: -0.1654, address: "East Legon, A&C Ma
 
 const STORE_LOCATIONS = [
   { id: "accra", name: "Accra Main - East Legon (A&C Mall)", region: "Greater Accra" },
-  { id: "kumasi", name: "Kumasi Branch - Adum", region: "Ashanti" },
-  { id: "takoradi", name: "Takoradi Branch - Market Circle", region: "Western" },
 ];
 
 const DELIVERY_PROVIDERS = [
