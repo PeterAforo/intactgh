@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, ShoppingBag, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,30 +12,48 @@ import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
 
 export default function CartAddedPopup() {
-  const { isOpen, product, quantity, close } = useCartPopupStore();
-  const cartItemCount = useCartStore((s) => s.getItemCount());
-  const cartTotal = useCartStore((s) => s.getTotal());
+  const [mounted, setMounted] = useState(false);
+  const isOpen = useCartPopupStore((s) => s.isOpen);
+  const product = useCartPopupStore((s) => s.product);
+  const quantity = useCartPopupStore((s) => s.quantity);
+  const close = useCartPopupStore((s) => s.close);
+  const items = useCartStore((s) => s.items);
+  const router = useRouter();
 
+  // Derive cart totals from items directly (not via method calls)
+  const cartItemCount = items.reduce((c, item) => c + item.quantity, 0);
+  const cartTotal = items.reduce((t, item) => t + item.product.price * item.quantity, 0);
 
-  return (
+  useEffect(() => { setMounted(true); }, []);
+
+  const handleCheckout = () => {
+    close();
+    router.push("/checkout");
+  };
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && product && (
-        <>
+        <motion.div
+          key="cart-popup-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[9998] flex items-center justify-center"
+        >
           {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 z-[9998]"
-          />
+          <div className="absolute inset-0 bg-black/40" />
 
           {/* Modal */}
           <motion.div
+            key="cart-popup-modal"
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999] w-[92vw] max-w-md"
+            className="relative z-[9999] w-[92vw] max-w-md"
           >
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-border/50">
               {/* Header */}
@@ -100,17 +119,19 @@ export default function CartAddedPopup() {
                 >
                   Continue Shopping
                 </Button>
-                <Link href="/checkout" onClick={close} className="flex-1">
-                  <Button className="w-full rounded-xl bg-accent hover:bg-accent-hover">
-                    Checkout
-                    <ArrowRight className="w-4 h-4 ml-1.5" />
-                  </Button>
-                </Link>
+                <Button
+                  onClick={handleCheckout}
+                  className="flex-1 rounded-xl bg-accent hover:bg-accent-hover"
+                >
+                  Checkout
+                  <ArrowRight className="w-4 h-4 ml-1.5" />
+                </Button>
               </div>
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
