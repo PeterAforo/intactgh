@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   const { id } = await params;
   const card = await prisma.giftCard.findUnique({ where: { id } });
   if (!card) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   const { id } = await params;
   try {
     const body = await request.json();
@@ -29,7 +29,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   const { id } = await params;
   await prisma.giftCard.update({ where: { id }, data: { status: "voided" } });
   return NextResponse.json({ success: true });

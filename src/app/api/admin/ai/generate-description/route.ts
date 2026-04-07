@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
 
   const apiKey = process.env.OPENAI_API_KEY;

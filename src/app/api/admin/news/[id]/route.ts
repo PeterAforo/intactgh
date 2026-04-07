@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   try {
     const { id } = await params;
     const body = await request.json();
@@ -22,7 +22,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   try {
     const { id } = await params;
     await prisma.newsPost.delete({ where: { id } });

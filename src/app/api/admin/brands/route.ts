@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   const brands = await prisma.brand.findMany({
     include: { _count: { select: { products: true } } },
     orderBy: { name: "asc" },
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   try {
     const { name, slug, logo, description, featured } = await request.json();
     if (!name || !slug) {

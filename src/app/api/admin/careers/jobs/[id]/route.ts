@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
   const { id } = await params;
   const job = await prisma.jobPosting.findUnique({
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
   const { id } = await params;
   try {
@@ -33,7 +33,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
   const { id } = await params;
   try {

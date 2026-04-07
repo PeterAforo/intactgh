@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   try {
     const now = new Date();
     const dayStart = (d: Date) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };

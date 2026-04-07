@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   const promotions = await prisma.promotion.findMany({ orderBy: { createdAt: "desc" } });
   return NextResponse.json({ promotions });
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request); if (auth.error) return auth.error;
+  const auth = await verifyStaff(request); if (auth.error) return auth.error;
   try {
     const body = await request.json();
     const { title, description, code, discount, type, startDate, endDate, active } = body;

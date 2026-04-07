@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
   const jobs = await prisma.jobPosting.findMany({
     orderBy: { createdAt: "desc" },
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
   try {
     const body = await request.json();

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 import { v2 as cloudinary } from "cloudinary";
 
 cloudinary.config({
@@ -38,7 +38,7 @@ function buildTransformation(action: string): any[] {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
 
   let body: { image: string; action: string };
