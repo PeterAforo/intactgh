@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X, ShoppingBag, ArrowRight } from "lucide-react";
+import { CheckCircle2, ShoppingBag, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartPopupStore } from "@/store/cart-popup-store";
 import { useCartStore } from "@/store/cart-store";
@@ -15,22 +15,6 @@ export default function CartAddedPopup() {
   const cartItemCount = useCartStore((s) => s.getItemCount());
   const cartTotal = useCartStore((s) => s.getTotal());
 
-  // Auto-close after 6 seconds
-  useEffect(() => {
-    if (!isOpen) return;
-    const timer = setTimeout(close, 6000);
-    return () => clearTimeout(timer);
-  }, [isOpen, close]);
-
-  // Close on Escape key
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [isOpen, close]);
 
   return (
     <AnimatePresence>
@@ -42,7 +26,6 @@ export default function CartAddedPopup() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 z-[9998]"
-            onClick={close}
           />
 
           {/* Modal */}
@@ -55,17 +38,11 @@ export default function CartAddedPopup() {
           >
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-border/50">
               {/* Header */}
-              <div className="bg-green-50 border-b border-green-100 px-5 py-3.5 flex items-center justify-between">
+              <div className="bg-green-50 border-b border-green-100 px-5 py-3.5 flex items-center justify-center">
                 <div className="flex items-center gap-2 text-green-700">
                   <CheckCircle2 className="w-5 h-5" />
                   <span className="font-semibold text-sm">Added to Cart!</span>
                 </div>
-                <button
-                  onClick={close}
-                  className="text-green-600 hover:text-green-800 transition-colors p-1 rounded-lg hover:bg-green-100"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
 
               {/* Product Info */}
@@ -123,9 +100,9 @@ export default function CartAddedPopup() {
                 >
                   Continue Shopping
                 </Button>
-                <Link href="/cart" onClick={close} className="flex-1">
+                <Link href="/checkout" onClick={close} className="flex-1">
                   <Button className="w-full rounded-xl bg-accent hover:bg-accent-hover">
-                    Go to Cart
+                    Checkout
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
                 </Link>
