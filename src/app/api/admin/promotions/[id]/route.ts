@@ -10,10 +10,26 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    if (body.startDate) body.startDate = new Date(body.startDate);
-    if (body.endDate) body.endDate = new Date(body.endDate);
-    if (body.discount) body.discount = parseFloat(body.discount);
-    const promotion = await prisma.promotion.update({ where: { id }, data: body });
+    const { productIds, ...fields } = body;
+    if (fields.startDate) fields.startDate = new Date(fields.startDate);
+    if (fields.endDate) fields.endDate = new Date(fields.endDate);
+    if (fields.discount) fields.discount = parseFloat(fields.discount);
+
+    // Update promotion fields
+    const promotion = await prisma.promotion.update({ where: { id }, data: fields });
+
+    // Sync products if productIds provided
+    if (Array.isArray(productIds)) {
+      // Delete existing product links
+      await prisma.promotionProduct.deleteMany({ where: { promotionId: id } });
+      // Create new links
+      if (productIds.length > 0) {
+        await prisma.promotionProduct.createMany({
+          data: productIds.map((pid: string) => ({ promotionId: id, productId: pid })),
+        });
+      }
+    }
+
     return NextResponse.json({ success: true, promotion });
   } catch (error) {
     console.error("Promotion update error:", error);

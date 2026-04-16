@@ -100,7 +100,8 @@ model Product {
   orderItems    OrderItem[]
   wishlistItems WishlistItem[]
   cartItems     CartItem[]
-  variants      ProductVariant[]
+  variants          ProductVariant[]
+  promotionProducts PromotionProduct[]
 }
 
 model ProductImage {
@@ -253,17 +254,31 @@ model NewsPost {
 }
 
 model Promotion {
-  id          String   @id @default(cuid())
+  id          String             @id @default(cuid())
   title       String
   description String?
-  code        String?  @unique
+  code        String?            @unique
   discount    Float
-  type        String   @default("percentage")
+  type        String             @default("percentage")
   startDate   DateTime
   endDate     DateTime
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  active      Boolean            @default(true)
+  showOnHome  Boolean            @default(false)
+  products    PromotionProduct[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+}
+
+model PromotionProduct {
+  id          String    @id @default(cuid())
+  promotionId String
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([promotionId, productId])
+  @@index([productId])
 }
 
 model SiteSetting {

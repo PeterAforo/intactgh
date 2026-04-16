@@ -5,6 +5,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ChatBot from "@/components/chat/ChatBot";
 import HeroSlider from "@/components/home/HeroSlider";
+import PromoProducts from "@/components/home/PromoProducts";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import PromoBanner from "@/components/home/PromoBanner";
@@ -28,6 +29,7 @@ export default function HomePage() {
       <Header />
       <main className="flex-1">
         <HeroSlider slides={data?.heroSlides} />
+        <PromoProducts promos={data?.homePromos} />
         <CategoryGrid categories={data?.categories} />
         <FeaturedProducts sections={data?.productSections} />
         <PromoBanner />

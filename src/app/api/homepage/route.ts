@@ -20,6 +20,8 @@ export async function GET() {
       category: { select: { id: true, name: true, slug: true } },
     };
 
+    const now = new Date();
+
     const [
       heroSlides,
       categories,
@@ -28,6 +30,7 @@ export async function GET() {
       newProducts,
       featuredProducts,
       topProducts,
+      homePromos,
     ] = await Promise.all([
       prisma.heroSlide.findMany({ orderBy: { order: "asc" } }),
       prisma.category.findMany({
@@ -62,12 +65,40 @@ export async function GET() {
         orderBy: { rating: "desc" },
         take: 8,
       }),
+      // Active homepage promotions with their products
+      prisma.promotion.findMany({
+        where: {
+          active: true,
+          showOnHome: true,
+          startDate: { lte: now },
+          endDate: { gte: now },
+        },
+        orderBy: { createdAt: "desc" },
+        include: {
+          products: {
+            include: {
+              product: {
+                select: productSelect,
+              },
+            },
+          },
+        },
+      }),
     ]);
 
     return NextResponse.json({
       heroSlides,
       categories,
       brands,
+      homePromos: homePromos.map((p) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        discount: p.discount,
+        type: p.type,
+        endDate: p.endDate,
+        products: p.products.map((pp) => pp.product),
+      })),
       productSections: {
         sale: saleProducts,
         new: newProducts,
