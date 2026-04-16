@@ -364,7 +364,7 @@ export default function ProductDetailPage() {
             {/* Features */}
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[
-                { icon: Truck, label: "Free Delivery", desc: "Over GH₵3,000" },
+                { icon: Truck, label: "Fast Delivery", desc: "Nationwide shipping" },
                 { icon: RotateCcw, label: "Easy Returns", desc: "5 days" },
                 { icon: ShieldCheck, label: "Warranty", desc: "Guaranteed" },
               ].map((feature) => (
@@ -417,7 +417,7 @@ export default function ProductDetailPage() {
                 <div dangerouslySetInnerHTML={{ __html: product.description }} />
                 <p className="mt-4">
                   At Intact Ghana, we ensure all our products are 100% authentic and come with 
-                  manufacturer warranty. Enjoy free delivery on orders over GH₵3,000 and our 
+                  manufacturer warranty. Enjoy fast nationwide delivery and our 
                   5-day money-back guarantee for complete peace of mind.
                 </p>
               </div>

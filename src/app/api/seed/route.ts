@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     // ── Banners ──
     const banners = [
       {
-        title: "Free Delivery on Orders Over GH₵3,000",
+        title: "Fast Nationwide Delivery — Shop With Confidence",
         image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=300&fit=crop",
         link: "/shop",
         position: "top",
@@ -148,9 +148,9 @@ export async function POST(request: NextRequest) {
         active: true,
       },
       {
-        title: "Free Delivery Week",
-        description: "Free delivery on all orders this week — no minimum!",
-        code: "FREEDELIVERY",
+        title: "Flash Sale Week",
+        description: "Massive discounts on all orders this week — don't miss out!",
+        code: "FLASHSALE",
         discount: 100,
         type: "fixed_shipping",
         startDate: now,
@@ -226,7 +226,7 @@ export async function POST(request: NextRequest) {
       {
         title: "Terms & Conditions",
         slug: "terms-conditions",
-        content: "# Terms & Conditions\n\n## Orders & Payment\n- Prices in Ghana Cedis (GH₵)\n- Payment via Hubtel, CanPay BNPL, COD, or in-store\n\n## Shipping & Delivery\n- Standard: 2-5 business days\n- Express (Yango/Bolt): same-day in Accra\n- Free delivery over GH₵3,000\n\n## Returns\n- 7-day return window, unused and original packaging\n- Refunds within 5-10 business days\n\nLast updated: March 2026",
+        content: "# Terms & Conditions\n\n## Orders & Payment\n- Prices in Ghana Cedis (GH₵)\n- Payment via Hubtel, CanPay BNPL, COD, or in-store\n\n## Shipping & Delivery\n- Standard: 2-5 business days\n- Express (Yango/Bolt): same-day in Accra\n- Delivery fees apply based on location\n\n## Returns\n- 7-day return window, unused and original packaging\n- Refunds within 5-10 business days\n\nLast updated: March 2026",
         metaTitle: "Terms & Conditions | Intact Ghana",
         metaDesc: "Terms and conditions for shopping with Intact Ghana.",
         published: true,

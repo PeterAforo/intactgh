@@ -1,7 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 import { Toaster } from "react-hot-toast";
 import CartPopupProvider from "@/components/cart/CartPopupProvider";
+import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
+import CookieConsent from "@/components/analytics/CookieConsent";
+import { OrganizationJsonLd, WebSiteJsonLd, LocalBusinessJsonLd } from "@/components/seo/JsonLd";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -22,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | Intact Ghana",
   },
   description:
-    "Ghana's #1 destination for electronics, smartphones, laptops, TVs, and home appliances. Racing with technology - free delivery on orders over GH₵3,000.",
+    "Ghana's #1 destination for electronics, smartphones, laptops, TVs, and home appliances. Racing with technology — fast nationwide delivery & unbeatable prices.",
   keywords:
     "electronics Ghana, smartphones Ghana, laptops Ghana, Intact Ghana, buy electronics online Ghana",
   metadataBase: new URL("https://intactghana.com"),
@@ -60,6 +64,8 @@ export default function RootLayout({
         {children}
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         <CartPopupProvider />
+        <Suspense fallback={null}><AnalyticsTracker /></Suspense>
+        <CookieConsent />
       </body>
     </html>
   );

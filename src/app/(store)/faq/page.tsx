@@ -15,7 +15,7 @@ const faqCategories = [
       },
       {
         q: "Is delivery free?",
-        a: "Yes! We offer free delivery on all orders above GH₵3,000. For orders below that amount, a flat delivery fee of GH₵50 applies within Accra and GH₵100 for other regions.",
+        a: "We offer fast, reliable delivery across Ghana. Delivery fees vary depending on your location — within Greater Accra from GH₵50, and other regions from GH₵80. See full details at checkout.",
       },
       {
         q: "How can I track my order?",

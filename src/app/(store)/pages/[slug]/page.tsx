@@ -55,7 +55,7 @@ const pagesContent: Record<string, { title: string; content: string[] }> = {
       "Intact Ghana delivers products across all regions of Ghana. Below are the details of our delivery service.",
       "## Delivery Areas\nWe deliver to all 16 regions of Ghana. Delivery times and fees may vary depending on your location.",
       "## Delivery Timeframes\nGreater Accra: 1-3 business days. Ashanti, Central, Eastern, Western regions: 3-5 business days. Northern, Upper East, Upper West, Volta, and other regions: 5-7 business days.",
-      "## Delivery Fees\nOrders above GH₵3,000: FREE delivery nationwide. Orders below GH₵3,000 within Greater Accra: GH₵50. Orders below GH₵3,000 outside Greater Accra: GH₵80-150 depending on location.",
+      "## Delivery Fees\nWithin Greater Accra: from GH₵50. Outside Greater Accra: GH₵80-150 depending on location. Exact fees are calculated at checkout based on your delivery address.",
       "## Tracking Your Order\nOnce your order is shipped, you will receive a notification via SMS and email with tracking information. You can also track your order from your account dashboard.",
       "## Failed Deliveries\nIf delivery is attempted and you are not available, our courier will attempt delivery again the next business day. After 3 failed attempts, the order will be returned to our warehouse and you will be contacted.",
       "## Damaged Items\nIf your order arrives damaged, please refuse the delivery and contact us immediately. We will arrange a replacement at no cost.",

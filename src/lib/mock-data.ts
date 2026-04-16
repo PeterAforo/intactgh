@@ -370,7 +370,7 @@ export const mockHeroSlides = [
     id: "slide-1",
     title: "Racing With Technology",
     subtitle: "Ghana's #1 Electronics Destination",
-    description: "Discover the latest smartphones, laptops, TVs, and more at unbeatable prices. Free delivery on orders over GH₵3,000.",
+    description: "Discover the latest smartphones, laptops, TVs, and more at unbeatable prices. Fast nationwide delivery across Ghana.",
     image: "https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=1920&h=800&fit=crop",
     buttonText: "Shop Now",
     buttonLink: "/shop",

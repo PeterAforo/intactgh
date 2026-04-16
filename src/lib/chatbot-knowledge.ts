@@ -21,8 +21,8 @@ export const knowledgeBase: KnowledgeEntry[] = [
     id: "faq_002",
     question: "Is delivery free?",
     answer:
-      "Yes! Free delivery on all orders above GH₵3,000. For orders below that amount, a flat fee of GH₵50 applies within Accra and GH₵100 for other regions.",
-    tags: ["free delivery", "shipping cost", "GH₵3000"],
+      "We offer fast, reliable delivery across Ghana. Delivery fees vary by location — from GH₵50 within Greater Accra and from GH₵80 for other regions. Full details are shown at checkout.",
+    tags: ["delivery fees", "shipping cost", "delivery rates"],
     category: "orders",
   },
   {
@@ -178,7 +178,7 @@ export const knowledgeBase: KnowledgeEntry[] = [
     id: "faq_052",
     question: "Do you have current promotions or deals?",
     answer:
-      "Yes! Check our Promotions page for current deals. We run: Mega Electronics Sale (up to 30% off selected items), Free Delivery Week, and Bundle & Save offers. Orders above GH₵5,000 also get an automatic 5% discount.",
+      "Yes! Check our Promotions page for current deals. We run: Mega Electronics Sale (up to 30% off selected items), Seasonal Specials, and Bundle & Save offers. Orders above GH₵5,000 also get an automatic 5% discount.",
     tags: ["deals", "sale", "discount", "promotions", "offers"],
     category: "products",
   },

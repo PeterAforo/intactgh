@@ -187,7 +187,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { icon: Award, title: "100% Authentic", desc: "All products are genuine with manufacturer warranty" },
-            { icon: Truck, title: "Free Delivery", desc: "Free delivery on orders over GH₵3,000" },
+            { icon: Truck, title: "Fast Delivery", desc: "Reliable nationwide shipping across Ghana" },
             { icon: ShieldCheck, title: "Secure Payment", desc: "Safe and secure online payment options" },
             { icon: Users, title: "24/7 Support", desc: "Round-the-clock customer support" },
           ].map((item, i) => (

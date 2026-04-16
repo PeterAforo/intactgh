@@ -83,7 +83,7 @@ const newsArticles: Record<
     content: [
       "We are thrilled to announce the grand opening of our newest showroom in Kumasi, located in the heart of Adum. This expansion marks a significant milestone in our mission to bring world-class technology to every corner of Ghana.",
       "## About the New Showroom\nThe Kumasi showroom spans over 2,000 square feet and features dedicated sections for smartphones, laptops, TVs, home appliances, and gaming equipment. Customers can experience products firsthand with interactive display areas and knowledgeable staff ready to assist.",
-      "## Special Opening Offers\nTo celebrate, we're offering exclusive discounts of up to 20% on selected products throughout the opening week. Additional benefits include free delivery within Kumasi for the first month, extended warranty on select products, and special trade-in offers for old devices.",
+      "## Special Opening Offers\nTo celebrate, we're offering exclusive discounts of up to 20% on selected products throughout the opening week. Additional benefits include discounted delivery within Kumasi for the first month, extended warranty on select products, and special trade-in offers for old devices.",
       "## Location & Hours\nAddress: Adum, Kumasi, Ashanti Region\nOpening Hours: Monday - Saturday, 8:30 AM - 5:30 PM\nPhone: +233 543 008 475",
       "## Visit Us\nWe invite all our customers in the Ashanti Region to visit our new showroom and experience the Intact Ghana difference. Our team is ready to help you find the perfect technology solutions for your needs.",
     ],

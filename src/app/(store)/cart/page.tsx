@@ -188,7 +188,7 @@ export default function CartPage() {
                 {shipping > 0 && (
                   <p className="text-xs text-text-muted bg-surface p-2 rounded-lg">
                     <Truck className="w-3.5 h-3.5 inline mr-1" />
-                    Add {formatPrice(3000 - subtotal)} more for free delivery
+                    Delivery fees apply at checkout — see options at checkout
                   </p>
                 )}
                 <div className="border-t border-border pt-3 flex justify-between">

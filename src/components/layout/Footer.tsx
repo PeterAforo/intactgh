@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const featureBadges = [
-  { icon: Truck, title: "Free Delivery", desc: "On orders over GH₵3,000" },
+  { icon: Truck, title: "Fast Nationwide Delivery", desc: "Swift & reliable across Ghana" },
   { icon: RotateCcw, title: "Easy Returns", desc: "5 days money return" },
   { icon: Headphones, title: "24/7 Support", desc: "Call us anytime" },
   { icon: ShieldCheck, title: "Safe Payment", desc: "Secure online payment" },
@@ -204,6 +204,11 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-white/40">
             &copy; {new Date().getFullYear()} Intact Ghana. All rights reserved. Racing with Technology.
+            <span className="mx-1">|</span>
+            Developed by{" "}
+            <a href="http://www.mcaforo.com" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-gold transition-colors font-medium">
+              McAforo
+            </a>
           </p>
           <div className="flex items-center gap-4 text-xs text-white/40">
             <span>We accept:</span>

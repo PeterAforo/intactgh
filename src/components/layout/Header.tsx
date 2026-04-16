@@ -155,22 +155,22 @@ export default function Header() {
       <div className="bg-primary text-white text-sm">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-10">
           <div className="hidden md:flex items-center gap-4">
-            <a href="mailto:info@intactghana.com" className="flex items-center gap-1 hover:text-gold transition-colors">
+            <a href="mailto:info@intactghana.com" className="flex items-center gap-1 hover:text-white/80 transition-colors">
               <Mail className="w-3.5 h-3.5" />
               info@intactghana.com
             </a>
-            <a href={`tel:${sitePhone.replace(/\s/g, "")}`} className="flex items-center gap-1 hover:text-gold transition-colors">
+            <a href={`tel:${sitePhone.replace(/\s/g, "")}`} className="flex items-center gap-1 hover:text-white/80 transition-colors">
               <Phone className="w-3.5 h-3.5" />
               {sitePhone}
             </a>
           </div>
           <div className="flex items-center gap-4 ml-auto">
-            <Link href="/store-locations" className="flex items-center gap-1 hover:text-gold transition-colors">
+            <Link href="/store-locations" className="flex items-center gap-1 hover:text-white/80 transition-colors">
               <MapPin className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Store Location</span>
             </Link>
-            <Link href="/about" className="hover:text-gold transition-colors hidden sm:block">About</Link>
-            <Link href="/contact" className="hover:text-gold transition-colors hidden sm:block">Contact Us</Link>
+            <Link href="/about" className="hover:text-white/80 transition-colors hidden sm:block">About</Link>
+            <Link href="/contact" className="hover:text-white/80 transition-colors hidden sm:block">Contact Us</Link>
           </div>
         </div>
       </div>
@@ -477,7 +477,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 text-sm font-medium hover:text-gold transition-colors rounded-lg hover:bg-white/10"
+                className="px-4 py-2 text-sm font-medium hover:text-white/80 transition-colors rounded-lg hover:bg-white/10"
               >
                 {link.label}
               </Link>
@@ -486,7 +486,7 @@ export default function Header() {
 
           {/* Promo text */}
           <div className="ml-auto text-xs text-gold font-medium animate-pulse">
-            Free Delivery on orders over GH₵3,000!
+            Fast Nationwide Delivery — Shop Now!
           </div>
         </div>
       </nav>
