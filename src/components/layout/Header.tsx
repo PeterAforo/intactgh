@@ -485,7 +485,7 @@ export default function Header() {
           </div>
 
           {/* Promo text */}
-          <div className="ml-auto text-xs text-red-500 font-medium animate-pulse">
+          <div className="ml-auto text-xs text-white font-bold animate-pulse">
             Fast Nationwide Delivery — Shop Now!
           </div>
         </div>
