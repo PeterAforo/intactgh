@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyStaff } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   request: NextRequest,
@@ -101,6 +102,13 @@ export async function PUT(
       }
     }
 
+    if (auth.user) {
+      await logAudit({
+        userId: auth.user.id, action: "update", entity: "product",
+        entityId: id, details: { name: name || product.name, changes: Object.keys(data) }, request,
+      });
+    }
+
     return NextResponse.json({ success: true, product });
   } catch (error) {
     console.error("Product update error:", error);
@@ -115,9 +123,18 @@ export async function DELETE(
   const auth = await verifyStaff(request); if (auth.error) return auth.error;
   try {
     const { id } = await params;
+    const product = await prisma.product.findUnique({ where: { id }, select: { name: true, sku: true } });
     await prisma.productImage.deleteMany({ where: { productId: id } });
     await prisma.productVariant.deleteMany({ where: { productId: id } });
     await prisma.product.delete({ where: { id } });
+
+    if (auth.user) {
+      await logAudit({
+        userId: auth.user.id, action: "delete", entity: "product",
+        entityId: id, details: { name: product?.name, sku: product?.sku }, request,
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Product delete error:", error);

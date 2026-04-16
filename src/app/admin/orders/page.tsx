@@ -12,7 +12,9 @@ import {
   Truck,
   X,
   Loader2,
+  Trash2,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +39,7 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Any>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
 
   const fetchOrders = useCallback(() => {
     fetch("/api/admin/orders").then(r => r.json()).then(d => {
@@ -45,6 +48,23 @@ export default function AdminOrdersPage() {
   }, []);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  useEffect(() => {
+    fetch("/api/auth/me").then(r => r.json()).then(d => {
+      if (d.user?.role) setUserRole(d.user.role);
+    }).catch(() => {});
+  }, []);
+
+  const handleDelete = async (orderId: string) => {
+    if (!confirm("Are you sure you want to permanently delete this order? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, { method: "DELETE" });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed"); }
+      toast.success("Order deleted");
+      setSelectedOrder(null);
+      fetchOrders();
+    } catch (e: Any) { toast.error(e.message || "Failed to delete order"); }
+  };
 
   const filtered = orders.filter((o: Any) => {
     const matchesSearch = !search || o.orderNumber?.toLowerCase().includes(search.toLowerCase()) || o.user?.name?.toLowerCase().includes(search.toLowerCase());
@@ -165,7 +185,12 @@ export default function AdminOrdersPage() {
                   </td>
                   <td className="px-5 py-3.5 text-sm text-text-muted">{new Date(order.createdAt).toLocaleDateString()}</td>
                   <td className="px-5 py-3.5">
-                    <button onClick={() => openDetail(order.id)} className="p-1.5 hover:bg-surface rounded-lg transition-colors text-text-muted hover:text-accent"><Eye className="w-4 h-4" /></button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openDetail(order.id)} className="p-1.5 hover:bg-surface rounded-lg transition-colors text-text-muted hover:text-accent"><Eye className="w-4 h-4" /></button>
+                      {userRole === "admin" && (
+                        <button onClick={() => handleDelete(order.id)} className="p-1.5 hover:bg-surface rounded-lg transition-colors text-text-muted hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -205,13 +230,20 @@ export default function AdminOrdersPage() {
               <h3 className="font-semibold text-text mb-3">Order Items</h3>
               <div className="space-y-2">
                 {selectedOrder.items?.map((item: Any) => (
-                  <div key={item.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{item.product?.name || "Product"}</p>
-                      {item.variantLabel && <p className="text-xs text-accent">{item.variantLabel}</p>}
-                      <p className="text-xs text-text-muted">Qty: {item.quantity}</p>
+                  <div key={item.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <div className="w-12 h-12 rounded-lg bg-surface overflow-hidden shrink-0">
+                      {item.product?.images?.[0]?.url ? (
+                        <Image src={item.product.images[0].url} alt={item.product?.name || ""} width={48} height={48} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-text-muted text-[10px]">No img</div>
+                      )}
                     </div>
-                    <p className="text-sm font-semibold">{formatPrice(item.price * item.quantity)}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.product?.name || "Product"}</p>
+                      {item.variantLabel && <p className="text-xs text-accent">{item.variantLabel}</p>}
+                      <p className="text-xs text-text-muted">Qty: {item.quantity} × {formatPrice(item.price)}</p>
+                    </div>
+                    <p className="text-sm font-semibold shrink-0">{formatPrice(item.price * item.quantity)}</p>
                   </div>
                 ))}
               </div>
@@ -244,6 +276,14 @@ export default function AdminOrdersPage() {
               </div>
             </div>
             {updatingStatus && <div className="flex items-center gap-2 mt-3 text-sm text-text-muted"><Loader2 className="w-4 h-4 animate-spin" /> Updating...</div>}
+
+            {userRole === "admin" && (
+              <div className="mt-6 pt-4 border-t border-border">
+                <Button variant="outline" size="sm" onClick={() => handleDelete(selectedOrder.id)} className="rounded-lg text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700">
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete Order
+                </Button>
+              </div>
+            )}
           </motion.div>
         </div>
       )}

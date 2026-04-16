@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyStaff } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function PUT(
   request: NextRequest,
@@ -30,6 +31,13 @@ export async function PUT(
       }
     }
 
+    if (auth.user) {
+      await logAudit({
+        userId: auth.user.id, action: "update", entity: "promotion",
+        entityId: id, details: { changes: fields, productCount: productIds?.length }, request,
+      });
+    }
+
     return NextResponse.json({ success: true, promotion });
   } catch (error) {
     console.error("Promotion update error:", error);
@@ -44,7 +52,16 @@ export async function DELETE(
   const auth = await verifyStaff(request); if (auth.error) return auth.error;
   try {
     const { id } = await params;
+    const promo = await prisma.promotion.findUnique({ where: { id }, select: { title: true } });
     await prisma.promotion.delete({ where: { id } });
+
+    if (auth.user) {
+      await logAudit({
+        userId: auth.user.id, action: "delete", entity: "promotion",
+        entityId: id, details: { title: promo?.title }, request,
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Promotion delete error:", error);

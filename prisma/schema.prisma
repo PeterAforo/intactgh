@@ -27,6 +27,7 @@ model User {
   addresses         Address[]
   wishlist          WishlistItem[]
   cart              CartItem[]
+  auditLogs         AuditLog[]
 }
 
 model Address {
@@ -394,5 +395,22 @@ model AnalyticsPageView {
 
   @@index([sessionId])
   @@index([path])
+  @@index([createdAt])
+}
+
+// ── Audit Trail ──────────────────────────────────────────
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String   // e.g. "create", "update", "delete"
+  entity     String   // e.g. "order", "product", "promotion"
+  entityId   String?  // ID of the affected record
+  details    String?  // JSON string with before/after or extra info
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
   @@index([createdAt])
 }

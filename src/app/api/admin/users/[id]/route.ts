@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyAdmin } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 
 export async function GET(
@@ -73,6 +74,13 @@ export async function PUT(
       select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
     });
 
+    if (auth.user) {
+      await logAudit({
+        userId: auth.user.id, action: "update", entity: "user",
+        entityId: id, details: { targetUser: user.email, changes: Object.keys(data).filter(k => k !== "password") }, request,
+      });
+    }
+
     return NextResponse.json({ user });
   } catch (error) {
     console.error("User update error:", error);
@@ -104,7 +112,16 @@ export async function DELETE(
       return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
     }
 
+    const deletedUser = await prisma.user.findUnique({ where: { id }, select: { name: true, email: true, role: true } });
     await prisma.user.delete({ where: { id } });
+
+    if (auth.user) {
+      await logAudit({
+        userId: auth.user.id, action: "delete", entity: "user",
+        entityId: id, details: { name: deletedUser?.name, email: deletedUser?.email, role: deletedUser?.role }, request,
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("User delete error:", error);

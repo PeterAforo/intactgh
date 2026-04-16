@@ -30,6 +30,7 @@ import {
   ExternalLink,
   Lock,
   BarChart3,
+  Shield,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -50,6 +51,7 @@ const sidebarLinks = [
   { href: "/admin/users", label: "Users", icon: ShieldCheck },
   { href: "/admin/roles", label: "Roles & Permissions", icon: Lock },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/admin/audit-logs", label: "Audit Trail", icon: Shield },
   { href: "/admin/ai-tools", label: "AI Tools", icon: Sparkles },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];

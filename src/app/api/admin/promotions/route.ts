@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyStaff } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const auth = await verifyStaff(request); if (auth.error) return auth.error;
@@ -36,6 +37,13 @@ export async function POST(request: NextRequest) {
       },
       include: { products: true },
     });
+    if (auth.user) {
+      await logAudit({
+        userId: auth.user.id, action: "create", entity: "promotion",
+        entityId: promotion.id, details: { title, discount, showOnHome, productCount: productIds?.length || 0 }, request,
+      });
+    }
+
     return NextResponse.json({ success: true, promotion });
   } catch (error) {
     console.error("Promotion create error:", error);
