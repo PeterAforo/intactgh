@@ -34,6 +34,7 @@ export default function CategoryPage() {
   const [allCategories, setAllCategories] = useState<Any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Any[]>([]);
   const [categoryBrands, setCategoryBrands] = useState<Any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -43,16 +44,19 @@ export default function CategoryPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
 
   useEffect(() => {
-    fetch("/api/categories").then(r => r.json()).then(d => {
-      if (d.categories) {
-        setAllCategories(d.categories);
-        const cat = d.categories.find((c: Any) => c.slug === slug);
-        setCategory(cat || null);
-      }
-    }).catch(() => {});
-    fetch("/api/brands").then(r => r.json()).then(d => {
-      if (d.brands) setCategoryBrands(d.brands);
-    }).catch(() => {});
+    setLoading(true);
+    Promise.all([
+      fetch("/api/categories").then(r => r.json()).then(d => {
+        if (d.categories) {
+          setAllCategories(d.categories);
+          const cat = d.categories.find((c: Any) => c.slug === slug);
+          setCategory(cat || null);
+        }
+      }),
+      fetch("/api/brands").then(r => r.json()).then(d => {
+        if (d.brands) setCategoryBrands(d.brands);
+      }),
+    ]).catch(() => {}).finally(() => setLoading(false));
   }, [slug]);
 
   const fetchProducts = useCallback(() => {
@@ -72,14 +76,48 @@ export default function CategoryPage() {
     return () => clearTimeout(t);
   }, [fetchProducts]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-surface">
+        <div className="bg-gradient-to-r from-primary to-primary-light text-white py-12">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="h-4 w-24 bg-white/20 rounded mb-4 animate-pulse" />
+            <div className="h-9 w-64 bg-white/20 rounded animate-pulse mb-2" />
+            <div className="h-4 w-40 bg-white/20 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-border p-4 animate-pulse">
+                <div className="aspect-square bg-surface rounded-xl mb-3" />
+                <div className="h-4 bg-surface rounded w-3/4 mb-2" />
+                <div className="h-4 bg-surface rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!category) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-        <h1 className="text-2xl font-bold text-text mb-3">Category Not Found</h1>
-        <p className="text-text-muted mb-6">The category you are looking for does not exist.</p>
-        <Link href="/shop">
-          <Button className="rounded-xl">Browse All Products</Button>
-        </Link>
+      <div className="min-h-screen bg-surface">
+        <div className="bg-gradient-to-r from-primary to-primary-light text-white py-12">
+          <div className="max-w-7xl mx-auto px-4">
+            <Link href="/shop" className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-sm mb-3 transition-colors">
+              <ArrowLeft className="w-4 h-4" /> Back to Shop
+            </Link>
+            <h1 className="text-3xl font-bold">Shop</h1>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 py-16 text-center">
+          <p className="text-text-muted mb-6">We couldn&apos;t find that category. Browse our full catalog instead.</p>
+          <Link href="/shop">
+            <Button className="rounded-xl">Browse All Products</Button>
+          </Link>
+        </div>
       </div>
     );
   }
