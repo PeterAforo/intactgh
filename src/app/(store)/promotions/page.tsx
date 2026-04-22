@@ -24,14 +24,18 @@ const PROMO_ICONS = [Zap, Gift, Truck, Sparkles, Percent, Tag];
 export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Any[]>([]);
   const [saleProducts, setSaleProducts] = useState<Any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/promotions").then(r => r.json()).then(d => {
-      if (d.promotions) setPromotions(d.promotions);
-    }).catch(() => {});
-    fetch("/api/products?onSale=true&limit=12").then(r => r.json()).then(d => {
-      if (d.products) setSaleProducts(d.products);
-    }).catch(() => {});
+    setLoading(true);
+    Promise.all([
+      fetch("/api/promotions").then(r => r.json()).then(d => {
+        if (d.promotions) setPromotions(d.promotions);
+      }),
+      fetch("/api/products?onSale=true&limit=12").then(r => r.json()).then(d => {
+        if (d.products) setSaleProducts(d.products);
+      }),
+    ]).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   return (
@@ -56,7 +60,13 @@ export default function PromotionsPage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {/* Active Promotions */}
         <h2 className="text-2xl font-bold text-text mb-6">Active Promotions</h2>
-        {promotions.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl p-6 animate-pulse h-48" />
+            ))}
+          </div>
+        ) : promotions.length === 0 ? (
           <div className="bg-white rounded-2xl border border-border p-12 text-center mb-16">
             <Tag className="w-10 h-10 text-text-muted mx-auto mb-3" />
             <p className="text-text-muted">No active promotions right now. Check back soon!</p>
@@ -107,6 +117,17 @@ export default function PromotionsPage() {
 
         {/* Sale Products */}
         <h2 className="text-2xl font-bold text-text mb-6">Products on Sale</h2>
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-border p-4 animate-pulse">
+                <div className="aspect-square bg-surface rounded-xl mb-3" />
+                <div className="h-4 bg-surface rounded w-3/4 mb-2" />
+                <div className="h-4 bg-surface rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {saleProducts.map((product, i) => {
             const discount = product.comparePrice
@@ -165,6 +186,7 @@ export default function PromotionsPage() {
             );
           })}
         </div>
+        )}
       </div>
     </div>
   );

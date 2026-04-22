@@ -40,6 +40,7 @@ export default function ShopPage() {
   const [filteredProducts, setFilteredProducts] = useState<Any[]>([]);
   const [categories, setCategories] = useState<Any[]>([]);
   const [brands, setBrands] = useState<Any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(d => d.categories && setCategories(d.categories)).catch(() => {});
@@ -47,6 +48,7 @@ export default function ShopPage() {
   }, []);
 
   const fetchProducts = useCallback(() => {
+    setLoading(true);
     const params = new URLSearchParams({ limit: "48", sort: sortBy });
     if (search) params.set("q", search);
     if (selectedCategory) params.set("category", selectedCategory);
@@ -58,7 +60,7 @@ export default function ShopPage() {
     else if (filterParam === "sale") params.set("onSale", "true");
     fetch(`/api/products?${params}`).then(r => r.json()).then(d => {
       if (d.products) setFilteredProducts(d.products);
-    }).catch(() => {});
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [search, selectedCategory, selectedBrand, sortBy, priceRange, filterParam]);
 
   useEffect(() => {
@@ -223,7 +225,21 @@ export default function ShopPage() {
         </div>
 
         {/* Products Grid */}
-        {filteredProducts.length > 0 ? (
+        {loading ? (
+          <div className={`grid gap-4 md:gap-6 ${
+            gridCols === 3
+              ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+              : "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          }`}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-border p-4 animate-pulse">
+                <div className="aspect-square bg-surface rounded-xl mb-3" />
+                <div className="h-4 bg-surface rounded w-3/4 mb-2" />
+                <div className="h-4 bg-surface rounded w-1/2" />
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length > 0 ? (
           <div className={`grid gap-4 md:gap-6 ${
             gridCols === 3
               ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
