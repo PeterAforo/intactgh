@@ -181,18 +181,36 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
 }
 
 export async function GET(request: NextRequest) {
+  // Authenticate user from JWT cookie
+  const { jwtVerify } = await import("jose");
+  const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
+  const token = request.cookies.get("auth-token")?.value;
+
+  if (!token) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  let userId: string;
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    userId = payload.userId as string;
+  } catch {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
 
-  const where = status ? { status } : {};
+  // Always filter by the authenticated user's ID
+  const where: Record<string, unknown> = { userId };
+  if (status) where.status = status;
 
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
       where,
       include: {
-        user: { select: { id: true, name: true, email: true } },
         items: {
           include: {
             product: {

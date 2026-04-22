@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { sendEmail } from "@/lib/email";
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000").replace(/\/+$/, "");
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,23 +46,29 @@ export async function POST(request: NextRequest) {
       select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
     });
 
-    // Send verification email (non-blocking)
+    // Send verification email
     const verifyUrl = `${BASE_URL}/verify-email?token=${verifyToken}`;
-    sendEmail(
-      email,
-      "Verify your Intact Ghana account",
-      `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
-        <img src="${BASE_URL}/logo.png" alt="Intact Ghana" style="height:40px;margin-bottom:24px" />
-        <h2 style="color:#1a1a1a;margin-bottom:8px">Welcome, ${name}!</h2>
-        <p style="color:#666;line-height:1.6">Thanks for creating an account with Intact Ghana. Please verify your email address to activate your account.</p>
-        <a href="${verifyUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;margin:20px 0">
-          Verify My Email
-        </a>
-        <p style="color:#999;font-size:13px;margin-top:24px">This link expires in 24 hours. If you didn't create this account, you can safely ignore this email.</p>
-        <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
-        <p style="color:#bbb;font-size:12px">Intact Ghana — East Legon, A&C Mall, Accra</p>
-      </div>`,
-    ).catch((e) => console.error("[Register] Verification email error:", e));
+    console.log("[Register] Sending verification email to:", email, "| URL:", verifyUrl);
+    try {
+      await sendEmail(
+        email,
+        "Verify your Intact Ghana account",
+        `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <img src="${BASE_URL}/logo.png" alt="Intact Ghana" style="height:40px;margin-bottom:24px" />
+          <h2 style="color:#1a1a1a;margin-bottom:8px">Welcome, ${name}!</h2>
+          <p style="color:#666;line-height:1.6">Thanks for creating an account with Intact Ghana. Please verify your email address to activate your account.</p>
+          <a href="${verifyUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;margin:20px 0">
+            Verify My Email
+          </a>
+          <p style="color:#999;font-size:13px;margin-top:24px">This link expires in 24 hours. If you didn't create this account, you can safely ignore this email.</p>
+          <hr style="border:none;border-top:1px solid #eee;margin:24px 0" />
+          <p style="color:#bbb;font-size:12px">Intact Ghana — East Legon, A&C Mall, Accra</p>
+        </div>`,
+      );
+      console.log("[Register] Verification email sent successfully to:", email);
+    } catch (emailErr) {
+      console.error("[Register] FAILED to send verification email to:", email, emailErr);
+    }
 
     return NextResponse.json({
       success: true,
