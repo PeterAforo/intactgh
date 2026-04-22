@@ -18,6 +18,8 @@ model User {
   emailVerified     Boolean   @default(false)
   verifyToken       String?   @unique
   verifyTokenExpiry DateTime?
+  resetToken        String?   @unique
+  resetTokenExpiry  DateTime?
   loginAttempts     Int       @default(0)
   lockedUntil       DateTime?
   createdAt         DateTime  @default(now())
@@ -440,6 +442,12 @@ model Reseller {
   bankName           String?
   bankAccountNumber  String?
   bankAccountName    String?
+  // Store customization
+  storeLogo          String?          // custom store logo
+  storeBanner        String?          // hero banner image
+  storeTagline       String?          // short tagline shown on store
+  storeThemeColor    String?          // hex color for store branding
+
   commissionBalance  Float            @default(0)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
@@ -447,6 +455,7 @@ model Reseller {
   clients            ResellerClient[]
   invoices           Invoice[]
   payouts            Payout[]
+  promotions         ResellerPromotion[]
 
   @@index([status])
   @@index([storeSlug])
@@ -465,17 +474,47 @@ model ResellerClient {
   id         String          @id @default(cuid())
   resellerId String
   reseller   Reseller        @relation(fields: [resellerId], references: [id], onDelete: Cascade)
-  name       String
+
+  // Type: "individual" or "company"
+  clientType String          @default("individual")
+  name       String          // Individual full name or company display name
   email      String?
   phone      String?
-  address    String?
-  city       String?
-  region     String?
-  createdAt  DateTime        @default(now())
-  orders     ResellerOrder[]
-  invoices   Invoice[]
+
+  // Address & Location
+  address        String?
+  digitalAddress String?     // Ghana Post GPS (e.g. GA-123-4567)
+  city           String?
+  region         String?
+  landmark       String?     // Nearby landmark for delivery
+  latitude       Float?
+  longitude      Float?
+
+  // Individual fields
+  nationalIdType   String?   // ghana_card, voter_id, passport, nhis, driver_license
+  nationalIdNumber String?
+  nationalIdImage  String?   // uploaded ID image URL
+
+  // Company fields
+  companyName       String?
+  companyRegNumber  String?  // Registrar General's Dept number
+  taxId             String?  // TIN / VAT number
+  companyDocUrl     String?  // uploaded registration certificate
+  companyTaxDocUrl  String?  // uploaded TIN certificate
+
+  // Contact person (for company clients)
+  contactPersonName  String?
+  contactPersonEmail String?
+  contactPersonPhone String?
+
+  notes     String?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @default(now()) @updatedAt
+  orders    ResellerOrder[]
+  invoices  Invoice[]
 
   @@index([resellerId])
+  @@index([clientType])
 }
 
 model ResellerOrder {
@@ -573,4 +612,23 @@ model Payout {
 
   @@index([resellerId])
   @@index([status])
+}
+
+model ResellerPromotion {
+  id          String   @id @default(cuid())
+  resellerId  String
+  reseller    Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  image       String?
+  discount    Float?           // percentage discount e.g. 10 = 10%
+  code        String?          // optional promo code
+  startDate   DateTime
+  endDate     DateTime
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([resellerId])
+  @@index([active, startDate, endDate])
 }
