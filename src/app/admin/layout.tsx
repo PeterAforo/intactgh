@@ -31,6 +31,8 @@ import {
   Lock,
   BarChart3,
   Shield,
+  Handshake,
+  Percent,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -48,6 +50,8 @@ const sidebarLinks = [
   { href: "/admin/promotions", label: "Promotions", icon: Megaphone },
   { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
   { href: "/admin/careers", label: "Careers", icon: Briefcase },
+  { href: "/admin/resellers", label: "Resellers", icon: Handshake },
+  { href: "/admin/category-margins", label: "Category Margins", icon: Percent },
   { href: "/admin/users", label: "Users", icon: ShieldCheck },
   { href: "/admin/roles", label: "Roles & Permissions", icon: Lock },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },

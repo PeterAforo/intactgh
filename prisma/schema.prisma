@@ -28,6 +28,8 @@ model User {
   wishlist          WishlistItem[]
   cart              CartItem[]
   auditLogs         AuditLog[]
+  reseller          Reseller?
+  processedPayouts  Payout[]   @relation("PayoutProcessor")
 }
 
 model Address {
@@ -52,11 +54,12 @@ model Category {
   parentId    String?
   parent      Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryChildren")
-  products    Product[]
-  featured    Boolean    @default(false)
-  order       Int        @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  products       Product[]
+  featured       Boolean         @default(false)
+  order          Int             @default(0)
+  categoryMargin CategoryMargin?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model Brand {
@@ -101,8 +104,10 @@ model Product {
   orderItems    OrderItem[]
   wishlistItems WishlistItem[]
   cartItems     CartItem[]
-  variants          ProductVariant[]
-  promotionProducts PromotionProduct[]
+  variants            ProductVariant[]
+  promotionProducts   PromotionProduct[]
+  resellerOrderItems  ResellerOrderItem[]
+  invoiceItems        InvoiceItem[]
 }
 
 model ProductImage {
@@ -413,4 +418,159 @@ model AuditLog {
   @@index([userId])
   @@index([entity])
   @@index([createdAt])
+}
+
+// ── IntactConnect (Reseller Platform) ────────────────────────
+model Reseller {
+  id                 String           @id @default(cuid())
+  userId             String           @unique
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeName          String
+  storeSlug          String           @unique
+  bio                String?
+  picture            String           // required profile photo URL
+  phone              String
+  email              String
+  nationalIdType     String           // ghana_card, voter_id, passport, nhis, driver_license
+  nationalIdNumber   String
+  nationalIdImage    String           // uploaded ID image URL
+  status             String           @default("pending") // pending, approved, rejected
+  momoProvider       String?          // mtn, vodafone, airteltigo
+  momoNumber         String?
+  bankName           String?
+  bankAccountNumber  String?
+  bankAccountName    String?
+  commissionBalance  Float            @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  orders             ResellerOrder[]
+  clients            ResellerClient[]
+  invoices           Invoice[]
+  payouts            Payout[]
+
+  @@index([status])
+  @@index([storeSlug])
+}
+
+model CategoryMargin {
+  id            String   @id @default(cuid())
+  categoryId    String   @unique
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  marginPercent Float    // e.g. 5.0 = 5%
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ResellerClient {
+  id         String          @id @default(cuid())
+  resellerId String
+  reseller   Reseller        @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  name       String
+  email      String?
+  phone      String?
+  address    String?
+  city       String?
+  region     String?
+  createdAt  DateTime        @default(now())
+  orders     ResellerOrder[]
+  invoices   Invoice[]
+
+  @@index([resellerId])
+}
+
+model ResellerOrder {
+  id              String              @id @default(cuid())
+  orderNumber     String              @unique
+  resellerId      String
+  reseller        Reseller            @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  clientId        String?
+  client          ResellerClient?     @relation(fields: [clientId], references: [id])
+  items           ResellerOrderItem[]
+  subtotal        Float
+  shipping        Float               @default(0)
+  total           Float
+  commission      Float               @default(0)
+  status          String              @default("pending") // pending, processing, shipped, delivered, cancelled
+  paymentMethod   String?
+  paymentStatus   String              @default("pending")
+  shippingName    String?
+  shippingPhone   String?
+  shippingAddress String?
+  shippingCity    String?
+  shippingRegion  String?
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([resellerId])
+  @@index([clientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ResellerOrderItem {
+  id           String        @id @default(cuid())
+  orderId      String
+  order        ResellerOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product       @relation(fields: [productId], references: [id])
+  quantity     Int
+  price        Float         // Intact selling price
+  commission   Float         @default(0) // commission earned on this item
+  variantLabel String?
+}
+
+model Invoice {
+  id            String          @id @default(cuid())
+  invoiceNumber String          @unique
+  resellerId    String
+  reseller      Reseller        @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  clientId      String?
+  client        ResellerClient? @relation(fields: [clientId], references: [id])
+  items         InvoiceItem[]
+  subtotal      Float
+  tax           Float           @default(0)
+  total         Float
+  amountPaid    Float           @default(0)
+  status        String          @default("draft") // draft, sent, paid, overdue, cancelled
+  dueDate       DateTime?
+  notes         String?
+  sentAt        DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([resellerId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+}
+
+model Payout {
+  id             String    @id @default(cuid())
+  resellerId     String
+  reseller       Reseller  @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  amount         Float
+  method         String    // momo, bank
+  accountDetails String?   // JSON: provider/number or bank/account
+  status         String    @default("requested") // requested, approved, paid, rejected
+  adminNotes     String?
+  requestedAt    DateTime  @default(now())
+  processedAt    DateTime?
+  processedById  String?
+  processedBy    User?     @relation("PayoutProcessor", fields: [processedById], references: [id])
+
+  @@index([resellerId])
+  @@index([status])
 }

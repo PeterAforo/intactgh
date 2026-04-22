@@ -68,7 +68,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 // ── HTML Base Layout ──────────────────────────────────────────────────────────
-function emailLayout(title: string, body: string): string {
+export function emailLayout(title: string, body: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
