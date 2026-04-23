@@ -20,6 +20,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  ChevronDown,
   LogOut,
   Bell,
   Search,
@@ -33,31 +34,50 @@ import {
   Shield,
   Handshake,
   Percent,
+  Wallet,
+  FileBox,
+  Truck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-const sidebarLinks = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/products", label: "Products", icon: Package },
-  { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/admin/customers", label: "Customers", icon: Users },
-  { href: "/admin/categories", label: "Categories", icon: FolderTree },
-  { href: "/admin/brands", label: "Brands", icon: Tags },
-  { href: "/admin/hero-slides", label: "Hero Slides", icon: ImageIcon },
-  { href: "/admin/banners", label: "Banners", icon: ImageIcon },
-  { href: "/admin/pages", label: "Pages", icon: FileText },
-  { href: "/admin/news", label: "News & Blog", icon: Newspaper },
-  { href: "/admin/promotions", label: "Promotions", icon: Megaphone },
-  { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
-  { href: "/admin/careers", label: "Careers", icon: Briefcase },
-  { href: "/admin/resellers", label: "Resellers", icon: Handshake },
-  { href: "/admin/category-margins", label: "Category Margins", icon: Percent },
-  { href: "/admin/users", label: "Users", icon: ShieldCheck },
-  { href: "/admin/roles", label: "Roles & Permissions", icon: Lock },
-  { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/admin/audit-logs", label: "Audit Trail", icon: Shield },
-  { href: "/admin/ai-tools", label: "AI Tools", icon: Sparkles },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+interface SidebarLink { href: string; label: string; icon: React.ComponentType<{ className?: string }> }
+interface SidebarGroup { label: string; links: SidebarLink[] }
+
+const sidebarGroups: SidebarGroup[] = [
+  { label: "", links: [
+    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  ]},
+  { label: "Store", links: [
+    { href: "/admin/products", label: "Products", icon: Package },
+    { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
+    { href: "/admin/customers", label: "Customers", icon: Users },
+    { href: "/admin/categories", label: "Categories", icon: FolderTree },
+    { href: "/admin/brands", label: "Brands", icon: Tags },
+    { href: "/admin/promotions", label: "Promotions", icon: Megaphone },
+    { href: "/admin/gift-cards", label: "Gift Cards", icon: Gift },
+  ]},
+  { label: "Resellers", links: [
+    { href: "/admin/resellers", label: "Resellers", icon: Handshake },
+    { href: "/admin/reseller-orders", label: "Reseller Orders", icon: Truck },
+    { href: "/admin/reseller-invoices", label: "Reseller Invoices", icon: FileBox },
+    { href: "/admin/payouts", label: "Payouts", icon: Wallet },
+    { href: "/admin/category-margins", label: "Category Margins", icon: Percent },
+  ]},
+  { label: "Content", links: [
+    { href: "/admin/hero-slides", label: "Hero Slides", icon: ImageIcon },
+    { href: "/admin/banners", label: "Banners", icon: ImageIcon },
+    { href: "/admin/pages", label: "Pages", icon: FileText },
+    { href: "/admin/news", label: "News & Blog", icon: Newspaper },
+    { href: "/admin/careers", label: "Careers", icon: Briefcase },
+  ]},
+  { label: "System", links: [
+    { href: "/admin/users", label: "Users", icon: ShieldCheck },
+    { href: "/admin/roles", label: "Roles & Permissions", icon: Lock },
+    { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+    { href: "/admin/audit-logs", label: "Audit Trail", icon: Shield },
+    { href: "/admin/ai-tools", label: "AI Tools", icon: Sparkles },
+    { href: "/admin/settings", label: "Settings", icon: Settings },
+  ]},
 ];
 
 export default function AdminLayout({
@@ -70,6 +90,21 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<{ name: string; email: string } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
+
+  // Track which groups are open — auto-open the group containing the active page
+  const getActiveGroup = () => {
+    for (const g of sidebarGroups) {
+      if (g.label && g.links.some(l => l.href === pathname || (l.href !== "/admin" && pathname.startsWith(l.href)))) return g.label;
+    }
+    return "";
+  };
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    const active = getActiveGroup();
+    if (active) setOpenGroups(prev => ({ ...prev, [active]: true }));
+  }, [pathname]);
+
+  const toggleGroup = (label: string) => setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }));
 
   useEffect(() => {
     fetch("/api/auth/me").then(r => r.json()).then(d => {
@@ -105,27 +140,46 @@ export default function AdminLayout({
           <p className="text-xs text-white/50 mt-1">Content Management System</p>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-3">
-          <div className="space-y-1">
-            {sidebarLinks.map((link) => {
-              const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href));
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? "bg-accent text-white shadow-md"
-                      : "text-white/70 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  <link.icon className="w-4.5 h-4.5 shrink-0" />
-                  {link.label}
-                  {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex-1 py-3 px-3 overflow-y-auto scrollbar-hide">
+          {sidebarGroups.map((group) => {
+            if (!group.label) {
+              return group.links.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link key={link.href} href={link.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all mb-1 ${isActive ? "bg-accent text-white shadow-md" : "text-white/70 hover:text-white hover:bg-white/10"}`}>
+                    <link.icon className="w-4 h-4 shrink-0" /> {link.label}
+                    {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto" />}
+                  </Link>
+                );
+              });
+            }
+            const isGroupOpen = openGroups[group.label] ?? false;
+            const hasActive = group.links.some(l => l.href === pathname || (l.href !== "/admin" && pathname.startsWith(l.href)));
+            return (
+              <div key={group.label} className="mb-1">
+                <button onClick={() => toggleGroup(group.label)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${hasActive ? "text-white/90" : "text-white/40 hover:text-white/60"}`}>
+                  {group.label}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isGroupOpen ? "rotate-0" : "-rotate-90"}`} />
+                </button>
+                {isGroupOpen && (
+                  <div className="ml-1 space-y-0.5 mt-0.5">
+                    {group.links.map((link) => {
+                      const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href));
+                      return (
+                        <Link key={link.href} href={link.href}
+                          className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${isActive ? "bg-accent text-white shadow-md" : "text-white/70 hover:text-white hover:bg-white/10"}`}>
+                          <link.icon className="w-4 h-4 shrink-0" /> {link.label}
+                          {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-white/10">
@@ -160,21 +214,42 @@ export default function AdminLayout({
                   <X className="w-5 h-5 text-white/60" />
                 </button>
               </div>
-              <nav className="py-4 px-3 space-y-1">
-                {sidebarLinks.map((link) => {
-                  const isActive = pathname === link.href;
+              <nav className="py-3 px-3 overflow-y-auto scrollbar-hide">
+                {sidebarGroups.map((group) => {
+                  if (!group.label) {
+                    return group.links.map((link) => {
+                      const isActive = pathname === link.href;
+                      return (
+                        <Link key={link.href} href={link.href} onClick={() => setSidebarOpen(false)}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all mb-1 ${isActive ? "bg-accent text-white" : "text-white/70 hover:text-white hover:bg-white/10"}`}>
+                          <link.icon className="w-4 h-4 shrink-0" /> {link.label}
+                        </Link>
+                      );
+                    });
+                  }
+                  const isGroupOpen = openGroups[group.label] ?? false;
+                  const hasActive = group.links.some(l => l.href === pathname || (l.href !== "/admin" && pathname.startsWith(l.href)));
                   return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                        isActive ? "bg-accent text-white" : "text-white/70 hover:text-white hover:bg-white/10"
-                      }`}
-                    >
-                      <link.icon className="w-4.5 h-4.5" />
-                      {link.label}
-                    </Link>
+                    <div key={group.label} className="mb-1">
+                      <button onClick={() => toggleGroup(group.label)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors ${hasActive ? "text-white/90" : "text-white/40 hover:text-white/60"}`}>
+                        {group.label}
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isGroupOpen ? "rotate-0" : "-rotate-90"}`} />
+                      </button>
+                      {isGroupOpen && (
+                        <div className="ml-1 space-y-0.5 mt-0.5">
+                          {group.links.map((link) => {
+                            const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href));
+                            return (
+                              <Link key={link.href} href={link.href} onClick={() => setSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all ${isActive ? "bg-accent text-white" : "text-white/70 hover:text-white hover:bg-white/10"}`}>
+                                <link.icon className="w-4 h-4 shrink-0" /> {link.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </nav>

@@ -140,3 +140,12 @@ body {
 .category-card:hover::before {
   background: linear-gradient(to top, rgba(0, 82, 204, 0.85), rgba(10, 10, 10, 0.3));
 }
+
+/* Hide scrollbar but keep scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
