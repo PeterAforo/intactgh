@@ -398,8 +398,37 @@ export async function POST(request: NextRequest) {
     });
 
     if (!openaiRes.ok) {
-      console.error("OpenAI error:", openaiRes.status, await openaiRes.text());
-      return NextResponse.json({ error: "AI service temporarily unavailable." }, { status: 502 });
+      const errBody = await openaiRes.text();
+      console.error("OpenAI error:", openaiRes.status, errBody);
+
+      // If gpt-4o fails (e.g. quota, access), retry with gpt-4o-mini
+      if (openaiRes.status === 429 || openaiRes.status === 403 || openaiRes.status === 404) {
+        console.log("Retrying with gpt-4o-mini fallback...");
+        const fallbackRes = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{ role: "system", content: systemPrompt }, ...history],
+            max_tokens: 700,
+            temperature: 0.65,
+            response_format: { type: "json_object" },
+          }),
+        });
+        if (fallbackRes.ok) {
+          const fbData = await fallbackRes.json();
+          const fbRaw = fbData.choices?.[0]?.message?.content ?? "{}";
+          let fbParsed: Partial<ChatApiResponse>;
+          try { fbParsed = JSON.parse(fbRaw); } catch { fbParsed = { message: fbRaw, action: "none" }; }
+          if (!fbParsed.message) fbParsed.message = settings.fallbackMessage;
+          return NextResponse.json({ ...fbParsed, action: fbParsed.action ?? "none", quick_replies: fbParsed.quick_replies ?? [] });
+        }
+      }
+
+      return NextResponse.json(
+        { error: `AI service error (${openaiRes.status}). Please try again.`, debug: process.env.NODE_ENV === "development" ? errBody : undefined },
+        { status: 502 }
+      );
     }
 
     const data = await openaiRes.json();
