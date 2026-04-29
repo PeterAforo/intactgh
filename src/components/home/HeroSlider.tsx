@@ -96,9 +96,9 @@ export default function HeroSlider({ slides: propSlides }: HeroSliderProps) {
           <h1 className="text-4xl md:text-5xl lg:text-7xl font-black mb-4 leading-tight">
             {slides[current]?.title}
           </h1>
-          <p className="text-lg md:text-xl text-white/80 mb-8 max-w-xl leading-relaxed">
-            {slides[current]?.description}
-          </p>
+          {slides[current]?.description && (
+            <div className="text-lg md:text-xl text-white/80 mb-8 max-w-xl leading-relaxed" dangerouslySetInnerHTML={{ __html: slides[current].description }} />
+          )}
           <div className="flex items-center gap-4">
             <Link href={slides[current]?.buttonLink || "/shop"}>
               <Button size="xl" className="rounded-full animate-pulse-glow">

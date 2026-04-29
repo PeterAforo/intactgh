@@ -92,7 +92,7 @@ export default function AdminHeroSlidesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-text">Hero Slides</h1>
@@ -173,11 +173,11 @@ export default function AdminHeroSlidesPage() {
 
       <div className="space-y-4">
         {slides.map((slide: Any, i: number) => (
-          <motion.div key={slide.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-white rounded-2xl border border-border overflow-hidden flex flex-col md:flex-row">
+          <motion.div key={slide.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-white rounded-2xl border border-border overflow-hidden flex flex-col md:flex-row min-w-0">
             <div className="relative w-full md:w-72 h-40 md:h-auto shrink-0">
               <Image src={slide.image} alt={slide.title} fill className="object-cover" sizes="288px" />
             </div>
-            <div className="p-5 flex-1">
+            <div className="p-5 flex-1 min-w-0 overflow-hidden">
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <Badge variant="outline" className="text-xs mb-2">Slide {i + 1}</Badge>
@@ -185,7 +185,7 @@ export default function AdminHeroSlidesPage() {
                   <p className="text-sm text-accent font-medium">{slide.subtitle}</p>
                 </div>
               </div>
-              <p className="text-sm text-text-light mb-4 line-clamp-2">{slide.description}</p>
+              {slide.description && <div className="text-sm text-text-light mb-4 line-clamp-2 prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: slide.description }} />}
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleEdit(slide)} className="rounded-lg"><Edit className="w-3.5 h-3.5 mr-1" /> Edit</Button>
                 <Button variant="ghost" size="sm" onClick={() => handleDelete(slide.id)} className="rounded-lg text-text-muted hover:text-red-500"><Trash2 className="w-3.5 h-3.5 mr-1" /> Delete</Button>
