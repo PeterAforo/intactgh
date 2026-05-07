@@ -108,12 +108,15 @@ export async function POST(request: NextRequest) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fireOrderNotifications(order: any, customerName: string, shippingEmail?: string) {
+  console.log("[Notifications] Starting for order:", order.orderNumber);
+  
   // Fetch notification settings from DB
   const settings = await prisma.siteSetting.findMany({
     where: { key: { in: ["notification_emails", "notification_sms_numbers", "mnotify_sender_id"] } },
   });
   const settingsMap: Record<string, string> = {};
   for (const s of settings) settingsMap[s.key] = s.value;
+  console.log("[Notifications] Settings from DB:", settingsMap);
 
   // Parse comma-separated emails and SMS numbers
   const adminEmails = (settingsMap["notification_emails"] ?? "sales@intactghana.com")
@@ -127,6 +130,12 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
 
   const customerEmail = shippingEmail || (order.user?.email ?? "");
   const customerPhone = order.shippingPhone ?? order.user?.phone ?? "";
+  
+  console.log("[Notifications] Admin emails:", adminEmails);
+  console.log("[Notifications] Admin SMS phones:", adminSmsPhones);
+  console.log("[Notifications] Customer email:", customerEmail);
+  console.log("[Notifications] Customer phone:", customerPhone);
+  console.log("[Notifications] MNOTIFY_API_KEY set:", !!process.env.MNOTIFY_API_KEY);
 
   // Build shared email data
   const emailData: OrderEmailData = {
@@ -161,7 +170,7 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
     city: order.shippingCity ?? "",
   };
 
-  await Promise.allSettled([
+  const results = await Promise.allSettled([
     // 1. Customer confirmation email
     customerEmail
       ? sendCustomerOrderEmail(emailData)
@@ -185,6 +194,13 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
     // 4. Admin SMS alerts (all configured numbers)
     ...adminSmsPhones.map((phone) => sendAdminOrderSMS({ phone, ...adminSmsData })),
   ]);
+  
+  console.log("[Notifications] Results:", results.map((r, i) => ({
+    index: i,
+    status: r.status,
+    value: r.status === "fulfilled" ? r.value : undefined,
+    reason: r.status === "rejected" ? String(r.reason) : undefined,
+  })));
 }
 
 export async function GET(request: NextRequest) {
