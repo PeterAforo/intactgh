@@ -110,13 +110,21 @@ export async function POST(request: NextRequest) {
 async function fireOrderNotifications(order: any, customerName: string, shippingEmail?: string) {
   // Fetch notification settings from DB
   const settings = await prisma.siteSetting.findMany({
-    where: { key: { in: ["notification_email", "notification_sms_number", "mnotify_sender_id"] } },
+    where: { key: { in: ["notification_emails", "notification_sms_numbers", "mnotify_sender_id"] } },
   });
   const settingsMap: Record<string, string> = {};
   for (const s of settings) settingsMap[s.key] = s.value;
 
-  const adminEmail = settingsMap["notification_email"] ?? "sales@intactghana.com";
-  const adminSmsPhone = settingsMap["notification_sms_number"] ?? "";
+  // Parse comma-separated emails and SMS numbers
+  const adminEmails = (settingsMap["notification_emails"] ?? "sales@intactghana.com")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const adminSmsPhones = (settingsMap["notification_sms_numbers"] ?? "")
+    .split(",")
+    .map((n) => n.trim())
+    .filter(Boolean);
+
   const customerEmail = shippingEmail || (order.user?.email ?? "");
   const customerPhone = order.shippingPhone ?? order.user?.phone ?? "";
 
@@ -144,14 +152,23 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
     })),
   };
 
+  const adminSmsData = {
+    orderNumber: order.orderNumber,
+    customerName,
+    customerPhone,
+    total: order.total,
+    paymentMethod: order.paymentMethod ?? "cod",
+    city: order.shippingCity ?? "",
+  };
+
   await Promise.allSettled([
     // 1. Customer confirmation email
     customerEmail
       ? sendCustomerOrderEmail(emailData)
       : Promise.resolve(),
 
-    // 2. Admin new-order alert email
-    sendAdminOrderEmail(emailData, adminEmail),
+    // 2. Admin new-order alert emails (all configured)
+    ...adminEmails.map((email) => sendAdminOrderEmail(emailData, email)),
 
     // 3. Customer SMS
     customerPhone
@@ -165,18 +182,8 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
         })
       : Promise.resolve(),
 
-    // 4. Admin SMS (only if configured in settings)
-    adminSmsPhone
-      ? sendAdminOrderSMS({
-          phone: adminSmsPhone,
-          orderNumber: order.orderNumber,
-          customerName,
-          customerPhone,
-          total: order.total,
-          paymentMethod: order.paymentMethod ?? "cod",
-          city: order.shippingCity ?? "",
-        })
-      : Promise.resolve(),
+    // 4. Admin SMS alerts (all configured numbers)
+    ...adminSmsPhones.map((phone) => sendAdminOrderSMS({ phone, ...adminSmsData })),
   ]);
 }
 

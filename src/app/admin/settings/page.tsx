@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, Globe, Mail, Phone, MapPin, Store, Palette, Bell, Loader2 } from "lucide-react";
+import { Save, Globe, Mail, Phone, MapPin, Store, Palette, Bell, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
@@ -16,8 +16,8 @@ export default function AdminSettingsPage() {
   const [address, setAddress] = useState("East Legon, A&C Mall, Greater Accra, Ghana");
   const [currency, setCurrency] = useState("GHS");
   const [freeShippingMin, setFreeShippingMin] = useState("3000");
-  const [notificationEmail, setNotificationEmail] = useState("sales@intactghana.com");
-  const [notificationSmsNumber, setNotificationSmsNumber] = useState("");
+  const [notificationEmails, setNotificationEmails] = useState<string[]>(["sales@intactghana.com"]);
+  const [notificationSmsNumbers, setNotificationSmsNumbers] = useState<string[]>([]);
   const [mnotifySenderId, setMnotifySenderId] = useState("IntactGH");
   const [primaryColor, setPrimaryColor] = useState("#0a0a0a");
   const [accentColor, setAccentColor] = useState("#0052cc");
@@ -35,8 +35,8 @@ export default function AdminSettingsPage() {
         if (s.address) setAddress(s.address);
         if (s.currency) setCurrency(s.currency);
         if (s.freeShippingMin) setFreeShippingMin(s.freeShippingMin);
-        if (s.notification_email) setNotificationEmail(s.notification_email);
-        if (s.notification_sms_number) setNotificationSmsNumber(s.notification_sms_number);
+        if (s.notification_emails) setNotificationEmails(s.notification_emails.split(",").map((e: string) => e.trim()).filter(Boolean));
+        if (s.notification_sms_numbers) setNotificationSmsNumbers(s.notification_sms_numbers.split(",").map((n: string) => n.trim()).filter(Boolean));
         if (s.mnotify_sender_id) setMnotifySenderId(s.mnotify_sender_id);
         if (s.primaryColor) setPrimaryColor(s.primaryColor);
         if (s.accentColor) setAccentColor(s.accentColor);
@@ -51,7 +51,7 @@ export default function AdminSettingsPage() {
     try {
       const res = await fetch("/api/admin/settings", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeName, tagline, email, phone, address, currency, freeShippingMin, notification_email: notificationEmail, notification_sms_number: notificationSmsNumber, mnotify_sender_id: mnotifySenderId, primaryColor, accentColor, infoColor, successColor }),
+        body: JSON.stringify({ storeName, tagline, email, phone, address, currency, freeShippingMin, notification_emails: notificationEmails.filter(Boolean).join(","), notification_sms_numbers: notificationSmsNumbers.filter(Boolean).join(","), mnotify_sender_id: mnotifySenderId, primaryColor, accentColor, infoColor, successColor }),
       });
       if (!res.ok) throw new Error("Failed to save");
       toast.success("Settings saved successfully");
@@ -218,31 +218,96 @@ export default function AdminSettingsPage() {
             <p className="text-xs text-text-muted">Configure where new order alerts are sent (email + SMS)</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Multiple Notification Emails */}
           <div className="md:col-span-2">
             <label className="text-sm font-medium text-text block mb-1.5">
-              <Mail className="w-3.5 h-3.5 inline mr-1" />Order Notification Email
+              <Mail className="w-3.5 h-3.5 inline mr-1" />Order Notification Emails
             </label>
-            <Input
-              value={notificationEmail}
-              onChange={(e) => setNotificationEmail(e.target.value)}
-              placeholder="sales@intactghana.com"
-              className="rounded-lg"
-            />
-            <p className="text-xs text-text-muted mt-1">Admin receives new order alert emails at this address.</p>
+            <div className="space-y-2">
+              {notificationEmails.map((emailVal, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Input
+                    value={emailVal}
+                    onChange={(e) => {
+                      const updated = [...notificationEmails];
+                      updated[idx] = e.target.value;
+                      setNotificationEmails(updated);
+                    }}
+                    placeholder="sales@intactghana.com"
+                    className="rounded-lg flex-1"
+                  />
+                  {notificationEmails.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => setNotificationEmails(notificationEmails.filter((_, i) => i !== idx))}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setNotificationEmails([...notificationEmails, ""])}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Email
+              </Button>
+            </div>
+            <p className="text-xs text-text-muted mt-2">All listed emails receive new order alerts.</p>
           </div>
+
+          {/* Multiple SMS Numbers */}
           <div>
             <label className="text-sm font-medium text-text block mb-1.5">
-              <Phone className="w-3.5 h-3.5 inline mr-1" />Intact Ghana SMS Number
+              <Phone className="w-3.5 h-3.5 inline mr-1" />Intact Ghana SMS Numbers
             </label>
-            <Input
-              value={notificationSmsNumber}
-              onChange={(e) => setNotificationSmsNumber(e.target.value)}
-              placeholder="+233543645126"
-              className="rounded-lg"
-            />
-            <p className="text-xs text-text-muted mt-1">Receives new order SMS alerts via mNotify.</p>
+            <div className="space-y-2">
+              {notificationSmsNumbers.length === 0 && (
+                <p className="text-xs text-text-muted italic">No SMS numbers configured</p>
+              )}
+              {notificationSmsNumbers.map((num, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Input
+                    value={num}
+                    onChange={(e) => {
+                      const updated = [...notificationSmsNumbers];
+                      updated[idx] = e.target.value;
+                      setNotificationSmsNumbers(updated);
+                    }}
+                    placeholder="+233543645126"
+                    className="rounded-lg flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50"
+                    onClick={() => setNotificationSmsNumbers(notificationSmsNumbers.filter((_, i) => i !== idx))}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => setNotificationSmsNumbers([...notificationSmsNumbers, ""])}
+              >
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Number
+              </Button>
+            </div>
+            <p className="text-xs text-text-muted mt-2">All listed numbers receive SMS alerts via mNotify.</p>
           </div>
+
           <div>
             <label className="text-sm font-medium text-text block mb-1.5">mNotify Sender ID</label>
             <Input
