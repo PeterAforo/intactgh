@@ -1,5 +1,5 @@
-// mNotify SMS API — https://apps.mnotify.net/smsapi
-const MNOTIFY_BASE = "https://apps.mnotify.net/smsapi";
+// mNotify SMS API v2.0 — https://api.mnotify.com/api/sms/quick
+const MNOTIFY_BASE = "https://api.mnotify.com/api/sms/quick";
 
 const PAYMENT_LABELS: Record<string, string> = {
   cod: "Cash on Delivery",
@@ -13,7 +13,20 @@ const PAYMENT_LABELS: Record<string, string> = {
 
 const GHS = (n: number) => `GHC${n.toFixed(2)}`;
 
-// ── Core send function ────────────────────────────────────────────────────────
+// ── Normalise Ghanaian phone numbers ──────────────────────────────────────────
+function normalizePhone(phone: string): string {
+  // Strip spaces, dashes, parentheses
+  let cleaned = phone.replace(/[\s\-()]/g, "");
+  // Convert +233 to 0 prefix for mNotify
+  if (cleaned.startsWith("+233")) {
+    cleaned = "0" + cleaned.slice(4);
+  } else if (cleaned.startsWith("233")) {
+    cleaned = "0" + cleaned.slice(3);
+  }
+  return cleaned;
+}
+
+// ── Core send function (mNotify API v2.0) ─────────────────────────────────────
 export async function sendSMS(to: string, message: string): Promise<boolean> {
   const apiKey = process.env.MNOTIFY_API_KEY;
   if (!apiKey) {
@@ -21,26 +34,26 @@ export async function sendSMS(to: string, message: string): Promise<boolean> {
     return false;
   }
 
-  // Normalise Ghanaian phone numbers: strip spaces/dashes, ensure leading 0 or +233
-  const phone = to.replace(/[\s\-()]/g, "");
-
-  const params = new URLSearchParams({
-    key: apiKey,
-    to: phone,
-    msg: message,
-    sender_id: process.env.MNOTIFY_SENDER_ID ?? "IntactGH",
-  });
+  const phone = normalizePhone(to);
+  const sender = process.env.MNOTIFY_SENDER_ID ?? "IntactGH";
 
   try {
-    const res = await fetch(`${MNOTIFY_BASE}?${params.toString()}`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
+    const res = await fetch(`${MNOTIFY_BASE}?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipient: [phone],
+        sender,
+        message,
+        is_schedule: false,
+        schedule_date: "",
+      }),
     });
 
-    const text = await res.text();
-    // mNotify returns "1000" or a JSON object on success
-    const ok = res.ok && (text.includes("1000") || text.includes("success"));
-    if (!ok) console.error("[SMS] mNotify response:", text);
+    const data = await res.json();
+    // v2.0 returns { status: "success", code: "2000", ... } on success
+    const ok = res.ok && (data.status === "success" || data.code === "2000");
+    if (!ok) console.error("[SMS] mNotify response:", data);
     return ok;
   } catch (err) {
     console.error("[SMS] mNotify request failed:", err);
