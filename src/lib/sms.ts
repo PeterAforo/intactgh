@@ -74,9 +74,9 @@ export async function sendCustomerOrderSMS(params: {
   const payLabel = PAYMENT_LABELS[paymentMethod] ?? paymentMethod;
 
   const message =
-    `Hi ${customerName}, thank you for your order #${orderNumber} on Intact Ghana. ` +
-    `${itemCount} item${itemCount > 1 ? "s" : ""}, Total: ${GHS(total)}. ` +
-    `A representative will contact you shortly to arrange delivery.`;
+    `Hi ${customerName}, thank you for your order ${orderNumber} on Intact Ghana. ` +
+    `A representative will contact you shortly to arrange delivery. ` +
+    `Call us on 0543645126 for enquiries.`;
 
   return sendSMS(phone, message);
 }
@@ -95,9 +95,8 @@ export async function sendAdminOrderSMS(params: {
   const payLabel = PAYMENT_LABELS[paymentMethod] ?? paymentMethod;
 
   const message =
-    `Order #${orderNumber} received. ` +
-    `${customerName}, ${city}. ` +
-    `Amount: ${GHS(total)}. ` +
+    `Order ${orderNumber} received. ` +
+    `${customerName}, ${customerPhone}, ${city}. ` +
     `Check admin panel for details.`;
 
   return sendSMS(phone, message);
