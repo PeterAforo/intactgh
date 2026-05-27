@@ -274,11 +274,14 @@ export default function CheckoutPage() {
 
   // --- Delivery Estimation ---
   const estimateDeliveryFee = useCallback(async (provider: DeliveryOption) => {
-    if (provider === "pickup" || provider === "standard") {
+    if (provider === "pickup") {
       setDeliveryEstimate(null);
       return;
     }
-    if (!shipping.lat || !shipping.lng) return;
+
+    // Standard delivery can use region OR GPS; Yango/Bolt need GPS
+    if (provider !== "standard" && !shipping.lat && !shipping.lng) return;
+    if (provider === "standard" && !shipping.region && !shipping.lat) return;
 
     setEstimatingDelivery(true);
     try {
@@ -287,12 +290,11 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           provider,
-          pickupLat: STORE_LOCATION.lat,
-          pickupLng: STORE_LOCATION.lng,
-          dropoffLat: parseFloat(shipping.lat),
-          dropoffLng: parseFloat(shipping.lng),
-          pickupAddress: STORE_LOCATION.address,
-          dropoffAddress: shipping.gpsAddress || shipping.street,
+          pickupLat: shipping.lat ? STORE_LOCATION.lat : undefined,
+          pickupLng: shipping.lng ? STORE_LOCATION.lng : undefined,
+          dropoffLat: shipping.lat ? parseFloat(shipping.lat) : undefined,
+          dropoffLng: shipping.lng ? parseFloat(shipping.lng) : undefined,
+          region: shipping.region || undefined,
         }),
       });
       const data = await res.json();
@@ -300,11 +302,18 @@ export default function CheckoutPage() {
         setDeliveryEstimate({ fee: data.fee, time: data.estimatedTime || selectedProvider?.estimatedTime || "" });
       }
     } catch {
-      // Fall back to base fee
       setDeliveryEstimate(null);
     }
     setEstimatingDelivery(false);
-  }, [shipping.lat, shipping.lng, shipping.gpsAddress, shipping.street, selectedProvider?.estimatedTime]);
+  }, [shipping.lat, shipping.lng, shipping.region, selectedProvider?.estimatedTime]);
+
+  // Auto-estimate delivery fee when entering step 2
+  useEffect(() => {
+    if (step === 2 && deliveryOption !== "pickup") {
+      estimateDeliveryFee(deliveryOption);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   // --- Step Navigation ---
   const goToStep = (target: number) => {
@@ -831,7 +840,7 @@ export default function CheckoutPage() {
                         } else if (paymentMethod === "pickup") {
                           setPaymentMethod("hubtel");
                         }
-                        if (provider.id === "yango" || provider.id === "bolt") {
+                        if (provider.id !== "pickup") {
                           estimateDeliveryFee(provider.id);
                         } else {
                           setDeliveryEstimate(null);
@@ -904,12 +913,14 @@ export default function CheckoutPage() {
                 )}
 
                 {/* Delivery estimate */}
-                {(deliveryOption === "yango" || deliveryOption === "bolt") && deliveryEstimate && (
+                {deliveryOption !== "pickup" && deliveryEstimate && (
                   <div className="bg-surface rounded-xl p-4 mb-6">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-text">Estimated Delivery Fee</p>
-                        <p className="text-xs text-text-muted">Based on your location</p>
+                        <p className="text-xs text-text-muted">
+                          {deliveryOption === "standard" ? `Based on ${shipping.lat ? "distance" : "region"}` : "Based on your location"}
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-accent">{formatPrice(deliveryEstimate.fee)}</p>
