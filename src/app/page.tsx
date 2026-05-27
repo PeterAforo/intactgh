@@ -10,6 +10,7 @@ import CategoryGrid from "@/components/home/CategoryGrid";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import PromoBanner from "@/components/home/PromoBanner";
 import BrandShowcase from "@/components/home/BrandShowcase";
+import IntactConnectCTA from "@/components/home/IntactConnectCTA";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -33,6 +34,7 @@ export default function HomePage() {
         <CategoryGrid categories={data?.categories} />
         <FeaturedProducts sections={data?.productSections} />
         <PromoBanner />
+        <IntactConnectCTA />
         <BrandShowcase brands={data?.brands} />
       </main>
       <Footer />
