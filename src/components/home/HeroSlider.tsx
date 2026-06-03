@@ -58,14 +58,14 @@ export default function HeroSlider({ slides: propSlides }: HeroSliderProps) {
 
   if (!slides.length || !slide) {
     return (
-      <section className="relative h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden bg-primary flex items-center justify-center">
+      <section className="relative h-full overflow-hidden bg-primary flex items-center justify-center">
         <div className="text-white/40 text-lg animate-pulse">Loading...</div>
       </section>
     );
   }
 
   return (
-    <section className="relative h-[500px] md:h-[600px] lg:h-[700px] overflow-hidden bg-primary">
+    <section className="relative h-full overflow-hidden bg-primary">
       <AnimatePresence mode="wait">
         <motion.div
           key={current}
