@@ -21,7 +21,16 @@ import { chatAnalytics } from "@/lib/chatbot/analytics";
 import { useCartPopupStore } from "@/store/cart-popup-store";
 import { useCartStore } from "@/store/cart-store";
 
+let hasUserInteracted = false;
+if (typeof window !== "undefined") {
+  const markInteracted = () => { hasUserInteracted = true; };
+  window.addEventListener("click", markInteracted, { once: true, capture: true });
+  window.addEventListener("keydown", markInteracted, { once: true, capture: true });
+  window.addEventListener("touchstart", markInteracted, { once: true, capture: true });
+}
+
 function playNotificationSound() {
+  if (!hasUserInteracted) return;
   try {
     const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     const gain = ctx.createGain();
