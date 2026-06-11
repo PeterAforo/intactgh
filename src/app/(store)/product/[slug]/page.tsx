@@ -42,7 +42,6 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState("description");
   const [addedToCart, setAddedToCart] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
-  const [shareUrl, setShareUrl] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
 
   const imageRef = useRef<HTMLDivElement>(null);
@@ -50,10 +49,6 @@ export default function ProductDetailPage() {
   const openCartPopup = useCartPopupStore((s) => s.open);
   const toggleWishlist = useWishlistStore((s) => s.toggleItemDB);
   const isInWishlist = useWishlistStore((s) => product ? s.isInWishlist(product.id) : false);
-
-  useEffect(() => {
-    setShareUrl(window.location.href);
-  }, []);
 
   useEffect(() => {
     if (!slug) return;
@@ -386,40 +381,34 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-3 pt-4 border-t border-border">
               <Share2 className="w-4 h-4 text-text-muted" />
               <span className="text-sm text-text-muted">Share:</span>
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(product.name + " - " + shareUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 bg-[#25D366] text-white rounded-full flex items-center justify-center text-xs font-bold hover:opacity-80 transition-opacity"
+              <button
+                onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(product.name + " - " + window.location.href)}`, "_blank")}
+                className="w-8 h-8 bg-[#25D366] text-white rounded-full flex items-center justify-center text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer"
                 aria-label="Share on WhatsApp"
               >
                 W
-              </a>
-              <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 bg-[#1877F2] text-white rounded-full flex items-center justify-center text-xs font-bold hover:opacity-80 transition-opacity"
+              </button>
+              <button
+                onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, "_blank")}
+                className="w-8 h-8 bg-[#1877F2] text-white rounded-full flex items-center justify-center text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer"
                 aria-label="Share on Facebook"
               >
                 F
-              </a>
-              <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(product.name)}&url=${encodeURIComponent(shareUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 bg-[#1DA1F2] text-white rounded-full flex items-center justify-center text-xs font-bold hover:opacity-80 transition-opacity"
+              </button>
+              <button
+                onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(product.name)}&url=${encodeURIComponent(window.location.href)}`, "_blank")}
+                className="w-8 h-8 bg-[#1DA1F2] text-white rounded-full flex items-center justify-center text-xs font-bold hover:opacity-80 transition-opacity cursor-pointer"
                 aria-label="Share on X"
               >
                 X
-              </a>
+              </button>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(shareUrl);
+                  navigator.clipboard.writeText(window.location.href);
                   setLinkCopied(true);
                   setTimeout(() => setLinkCopied(false), 2000);
                 }}
-                className={`h-8 px-3 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                className={`h-8 px-3 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
                   linkCopied ? "bg-green-600 text-white" : "bg-gray-600 text-white hover:opacity-80"
                 }`}
                 aria-label="Copy link"
