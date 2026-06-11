@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Tag, Clock, Percent, ArrowRight, Zap, Gift, Truck, Package, Sparkles } from "lucide-react";
+import { Tag, Clock, Percent, ArrowRight, Zap, Gift, Truck, Package, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils";
@@ -25,6 +25,10 @@ export default function PromotionsPage() {
   const [promotions, setPromotions] = useState<Any[]>([]);
   const [saleProducts, setSaleProducts] = useState<Any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PRODUCTS_PER_PAGE = 12;
 
   useEffect(() => {
     setLoading(true);
@@ -32,11 +36,30 @@ export default function PromotionsPage() {
       fetch("/api/promotions").then(r => r.json()).then(d => {
         if (d.promotions) setPromotions(d.promotions);
       }),
-      fetch("/api/products?onSale=true&limit=12").then(r => r.json()).then(d => {
+      fetch(`/api/products?onSale=true&limit=${PRODUCTS_PER_PAGE}&page=1`).then(r => r.json()).then(d => {
         if (d.products) setSaleProducts(d.products);
+        if (d.pagination) {
+          setCurrentPage(d.pagination.page);
+          setTotalPages(d.pagination.totalPages);
+        }
       }),
     ]).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const loadMore = async () => {
+    const nextPage = currentPage + 1;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/products?onSale=true&limit=${PRODUCTS_PER_PAGE}&page=${nextPage}`);
+      const d = await res.json();
+      if (d.products) setSaleProducts(prev => [...prev, ...d.products]);
+      if (d.pagination) {
+        setCurrentPage(d.pagination.page);
+        setTotalPages(d.pagination.totalPages);
+      }
+    } catch {}
+    setLoadingMore(false);
+  };
 
   return (
     <div className="min-h-screen bg-surface">
@@ -186,6 +209,23 @@ export default function PromotionsPage() {
             );
           })}
         </div>
+        )}
+
+        {!loading && currentPage < totalPages && (
+          <div className="flex justify-center mt-10">
+            <Button
+              onClick={loadMore}
+              disabled={loadingMore}
+              size="lg"
+              className="px-8 gap-2"
+            >
+              {loadingMore ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
+              ) : (
+                <>Load More Products <ArrowRight className="w-4 h-4" /></>
+              )}
+            </Button>
+          </div>
         )}
       </div>
     </div>
