@@ -181,12 +181,6 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               )}
             </div>
 
-            {/* Stock Indicator */}
-            {product.stock <= 5 && product.stock > 0 && (
-              <p className="text-xs text-warning mt-2 font-medium">
-                Only {product.stock} left in stock!
-              </p>
-            )}
           </div>
         </div>
       </Link>
