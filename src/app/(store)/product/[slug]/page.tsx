@@ -263,7 +263,7 @@ export default function ProductDetailPage() {
                 <>
                   <Check className="w-5 h-5 text-success" />
                   <span className="text-sm font-medium text-success">
-                    In Stock ({product.stock} available)
+                    In Stock
                   </span>
                 </>
               ) : (

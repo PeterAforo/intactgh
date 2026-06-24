@@ -163,6 +163,14 @@ export default function Header() {
               <Phone className="w-3.5 h-3.5" />
               {sitePhone}
             </a>
+            <a href={`tel:+233543008475`} className="flex items-center gap-1 hover:text-white/80 transition-colors">
+              <Phone className="w-3.5 h-3.5" />
+              +233 54 300 8475
+            </a>
+            <a href={`https://wa.me/233543008475`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white/80 transition-colors text-green-400">
+              <Phone className="w-3.5 h-3.5" />
+              WhatsApp
+            </a>
           </div>
           <div className="flex items-center gap-4 ml-auto">
             <Link href="/store-locations" className="flex items-center gap-1 hover:text-white/80 transition-colors">
