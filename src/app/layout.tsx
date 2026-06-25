@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Suspense } from "react";
+import Script from "next/script";
 import { Toaster } from "react-hot-toast";
 import CartPopupProvider from "@/components/cart/CartPopupProvider";
 import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
@@ -60,6 +61,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <head>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-PMWKVDN3QP"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-PMWKVDN3QP');
+          `}
+        </Script>
+      </head>
       <body className="min-h-full flex flex-col font-sans">
         {children}
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
