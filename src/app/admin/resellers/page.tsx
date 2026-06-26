@@ -259,7 +259,7 @@ export default function ResellersPage() {
                 )}
                 {selectedReseller.status === "approved" && (
                   <a
-                    href={`${process.env.NEXT_PUBLIC_INTACTCONNECT_URL || "http://localhost:3001"}/store/${selectedReseller.storeSlug}`}
+                    href={`https://www.intactconnect.com.gh/store/${selectedReseller.storeSlug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 bg-accent text-white py-2.5 rounded-lg font-medium text-sm text-center hover:bg-accent/90 transition-colors flex items-center justify-center gap-2"
