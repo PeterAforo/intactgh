@@ -125,6 +125,11 @@ export default function AccountPage() {
       setSettingsName(data.user.name || "");
       setSettingsPhone(data.user.phone || "");
       fetch("/api/orders").then((r) => r.json()).then((od) => { if (od.orders) setOrders(od.orders); }).catch(() => {});
+      
+      // Redirect admin/staff users to admin dashboard
+      if (data.user.role === "admin" || data.user.role === "staff") {
+        window.location.href = "/admin";
+      }
     } catch {
       setError("Network error. Please try again.");
     } finally {
