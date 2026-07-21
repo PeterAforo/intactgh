@@ -40,7 +40,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (status && status !== reseller.status) {
     try {
       if (status === "approved") {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3001";
+        // Reseller dashboard/store live on the IntactConnect app, not the Intact Ghana storefront
+        const baseUrl = (process.env.CONNECT_APP_URL || "https://www.intactconnect.com.gh").replace(/\/+$/, "");
         await sendEmail(
           reseller.user.email,
           "Your IntactConnect account has been approved!",
