@@ -447,7 +447,11 @@ model Reseller {
   storeBanner        String?          // hero banner image
   storeTagline       String?          // short tagline shown on store
   storeThemeColor    String?          // hex color for store branding
+  selectedCategoryIds Json?           // reseller-selected categories to display
+  selectedProductIds  Json?           // reseller-selected products to display
+  onboardingComplete  Boolean         @default(false)
 
+  pendingCommission  Float            @default(0)
   commissionBalance  Float            @default(0)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
@@ -528,18 +532,22 @@ model ResellerOrder {
   subtotal        Float
   shipping        Float               @default(0)
   total           Float
-  commission      Float               @default(0)
-  status          String              @default("pending") // pending, processing, shipped, delivered, cancelled
-  paymentMethod   String?
-  paymentStatus   String              @default("pending")
-  shippingName    String?
-  shippingPhone   String?
-  shippingAddress String?
-  shippingCity    String?
-  shippingRegion  String?
-  notes           String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  commission         Float               @default(0)
+  commissionReleased Boolean             @default(false)
+  status             String              @default("pending_payment") // pending_payment, processing, shipped, delivered, completed, cancelled
+  paymentMethod      String?
+  paymentStatus      String              @default("pending")
+  paymentReference   String?
+  paidAt             DateTime?
+  deliveredAt        DateTime?
+  shippingName       String?
+  shippingPhone      String?
+  shippingAddress    String?
+  shippingCity       String?
+  shippingRegion     String?
+  notes              String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
 
   @@index([resellerId])
   @@index([clientId])

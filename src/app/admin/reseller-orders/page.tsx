@@ -9,7 +9,7 @@ interface OrderItem {
 }
 
 interface Order {
-  id: string; orderNumber: string; total: number; commission: number; status: string;
+  id: string; orderNumber: string; total: number; commission: number; status: string; paymentStatus: string;
   shippingName: string | null; shippingPhone: string | null; shippingAddress: string | null; shippingCity: string | null;
   createdAt: string; items: OrderItem[];
   reseller: { storeName: string; user: { name: string } };
@@ -17,12 +17,18 @@ interface Order {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700", processing: "bg-blue-100 text-blue-700",
-  shipped: "bg-indigo-100 text-indigo-700", delivered: "bg-green-100 text-green-700",
+  pending_payment: "bg-gray-100 text-gray-700", pending: "bg-gray-100 text-gray-700",
+  processing: "bg-blue-100 text-blue-700", shipped: "bg-indigo-100 text-indigo-700",
+  delivered: "bg-green-100 text-green-700", completed: "bg-emerald-100 text-emerald-700",
   cancelled: "bg-red-100 text-red-700",
 };
 
-const STATUSES = ["pending", "processing", "shipped", "delivered", "cancelled"];
+const PAYMENT_COLORS: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-700", paid: "bg-green-100 text-green-700",
+  failed: "bg-red-100 text-red-700", refunded: "bg-gray-100 text-gray-700",
+};
+
+const STATUSES = ["pending_payment", "processing", "shipped", "delivered", "completed", "cancelled"];
 
 export default function ResellerOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -42,6 +48,16 @@ export default function ResellerOrdersPage() {
     await fetch(`/api/admin/reseller-orders/${id}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
+    });
+    setUpdating(null);
+    load();
+  };
+
+  const confirmPayment = async (id: string) => {
+    setUpdating(id);
+    await fetch(`/api/admin/reseller-orders/${id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentStatus: "paid" }),
     });
     setUpdating(null);
     load();
@@ -81,7 +97,10 @@ export default function ResellerOrdersPage() {
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-mono font-bold text-text text-sm">{order.orderNumber}</p>
                     <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_COLORS[order.status] || ""}`}>
-                      {order.status}
+                      {order.status.replace(/_/g, " ")}
+                    </span>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${PAYMENT_COLORS[order.paymentStatus] || ""}`}>
+                      {order.paymentStatus}
                     </span>
                   </div>
                   <p className="text-xs text-text-muted">
@@ -120,13 +139,24 @@ export default function ResellerOrdersPage() {
                     {order.shippingAddress && <p className="text-text-muted">{order.shippingAddress}, {order.shippingCity}</p>}
                   </div>
 
+                  {/* Payment confirmation */}
+                  {order.paymentStatus !== "paid" && order.status !== "cancelled" && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs text-text-muted">Payment:</span>
+                      <button onClick={() => confirmPayment(order.id)} disabled={updating === order.id}
+                        className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-40">
+                        {updating === order.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "Confirm Payment"}
+                      </button>
+                    </div>
+                  )}
+
                   {/* Status Update */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs text-text-muted">Update status:</span>
                     {STATUSES.map(s => (
                       <button key={s} onClick={() => updateStatus(order.id, s)} disabled={updating === order.id || order.status === s}
                         className={`px-3 py-1 rounded-full text-xs font-medium capitalize disabled:opacity-40 ${order.status === s ? STATUS_COLORS[s] : "bg-white border border-border text-text-muted hover:bg-surface"}`}>
-                        {updating === order.id ? <Loader2 className="w-3 h-3 animate-spin" /> : s}
+                        {updating === order.id ? <Loader2 className="w-3 h-3 animate-spin" /> : s.replace(/_/g, " ")}
                       </button>
                     ))}
                   </div>
