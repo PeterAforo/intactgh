@@ -159,7 +159,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                   <Star
                     key={i}
                     className={`w-3.5 h-3.5 ${
-                      i < Math.floor(product.rating)
+                      i < Math.round(product.rating)
                         ? "text-gold fill-gold"
                         : "text-border"
                     }`}

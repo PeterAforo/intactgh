@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, ThumbsUp, User, Loader2, Check, LogIn } from "lucide-react";
+import { Star, ThumbsUp, User, Loader2, Check, LogIn, Trash2, BadgeCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +11,10 @@ interface Review {
   rating: number;
   comment: string | null;
   createdAt: string;
-  user: { id: string; name: string | null; avatar: string | null };
+  verifiedPurchase: boolean;
+  isAdminSeed: boolean;
+  seedAuthorName: string | null;
+  user: { id: string; name: string | null; avatar: string | null } | null;
 }
 
 interface Props {
@@ -64,11 +67,12 @@ function DistributionBar({ count, total, label }: { count: number; total: number
   );
 }
 
-function ReviewCard({ review }: { review: Review }) {
+function ReviewCard({ review, canDelete, onDelete }: { review: Review; canDelete: boolean; onDelete?: (id: string) => void }) {
   const date = new Date(review.createdAt).toLocaleDateString("en-GB", {
     day: "numeric", month: "short", year: "numeric",
   });
-  const initials = review.user.name ? review.user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
+  const displayName = review.user?.name ?? review.seedAuthorName ?? "Anonymous";
+  const initials = displayName !== "Anonymous" ? displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "?";
 
   return (
     <motion.div
@@ -78,7 +82,7 @@ function ReviewCard({ review }: { review: Review }) {
     >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-bold text-sm shrink-0">
-          {review.user.avatar ? (
+          {review.user?.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={review.user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
           ) : (
@@ -87,8 +91,32 @@ function ReviewCard({ review }: { review: Review }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <p className="font-semibold text-sm text-text">{review.user.name ?? "Anonymous"}</p>
-            <span className="text-xs text-text-muted">{date}</span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="font-semibold text-sm text-text">{displayName}</p>
+              {review.verifiedPurchase && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-green-600 bg-green-50 rounded-full px-1.5 py-0.5">
+                  <BadgeCheck className="w-3 h-3" />Verified Buyer
+                </span>
+              )}
+              {review.isAdminSeed && (
+                <span className="text-[10px] font-medium text-text-muted bg-surface rounded-full px-1.5 py-0.5 border border-border">
+                  Seeded
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-text-muted">{date}</span>
+              {canDelete && onDelete && (
+                <button
+                  onClick={() => onDelete(review.id)}
+                  className="text-text-muted hover:text-red-500 transition-colors"
+                  title="Delete your review"
+                  aria-label="Delete review"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
           <StarRow rating={review.rating} />
           {review.comment && (
@@ -110,7 +138,7 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Auth state
-  const [authUser, setAuthUser] = useState<{ id: string; name: string | null; email: string } | null>(null);
+  const [authUser, setAuthUser] = useState<{ id: string; name: string | null; email: string; role: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   // Review form state
@@ -152,7 +180,7 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
   // Check if logged-in user already reviewed this product
   useEffect(() => {
     if (authUser && reviews.length > 0) {
-      const existing = reviews.find((r) => r.user.id === authUser.id) ?? null;
+      const existing = reviews.find((r) => r.user?.id === authUser.id) ?? null;
       if (existing) {
         setUserExistingReview(existing);
         setFormRating(existing.rating);
@@ -183,6 +211,22 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
     finally { setSubmitting(false); }
   };
 
+  const handleDelete = async (reviewId: string) => {
+    if (!confirm("Delete your review? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/reviews/${reviewId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        setSubmitError(data.error ?? "Delete failed.");
+        return;
+      }
+      setUserExistingReview(null);
+      setFormRating(0);
+      setFormComment("");
+      await loadReviews(1);
+    } catch { setSubmitError("Something went wrong while deleting."); }
+  };
+
   const avgRating = total > 0 ? productRating : 0;
 
   return (
@@ -208,8 +252,12 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
             <h3 className="font-bold text-text mb-1">
               {userExistingReview ? "Update Your Review" : "Write a Review"}
             </h3>
-            <p className="text-sm text-text-muted mb-4">
+            <p className="text-sm text-text-muted mb-1">
               Reviewing as <span className="font-medium text-accent">{authUser.name ?? authUser.email}</span>
+            </p>
+            <p className="text-xs text-text-muted mb-4 flex items-center gap-1">
+              <BadgeCheck className="w-3.5 h-3.5 text-green-500" />
+              Only verified buyers of this product can leave a review.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -235,19 +283,31 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
                 <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{submitError}</p>
               )}
 
-              <Button
-                type="submit"
-                disabled={submitting || formRating === 0}
-                className="rounded-xl"
-              >
-                {submitting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</>
-                ) : submitSuccess ? (
-                  <><Check className="w-4 h-4 mr-2" />Submitted!</>
-                ) : (
-                  userExistingReview ? "Update Review" : "Submit Review"
+              <div className="flex items-center gap-3">
+                <Button
+                  type="submit"
+                  disabled={submitting || formRating === 0}
+                  className="rounded-xl"
+                >
+                  {submitting ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</>
+                  ) : submitSuccess ? (
+                    <><Check className="w-4 h-4 mr-2" />Submitted!</>
+                  ) : (
+                    userExistingReview ? "Update Review" : "Submit Review"
+                  )}
+                </Button>
+                {userExistingReview && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => handleDelete(userExistingReview.id)}
+                    className="rounded-xl text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />Delete
+                  </Button>
                 )}
-              </Button>
+              </div>
             </form>
           </div>
         ) : (
@@ -257,7 +317,7 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-text">Want to share your experience?</p>
-              <p className="text-xs text-text-muted">Log in to leave a review for this product.</p>
+              <p className="text-xs text-text-muted">Log in to leave a review for this product. Only verified buyers can review.</p>
             </div>
             <Link href="/account">
               <Button size="sm" variant="outline" className="rounded-xl shrink-0">
@@ -282,7 +342,14 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
       ) : (
         <>
           <AnimatePresence initial={false}>
-            {reviews.map((r) => <ReviewCard key={r.id} review={r} />)}
+            {reviews.map((r) => (
+              <ReviewCard
+                key={r.id}
+                review={r}
+                canDelete={!!authUser && (r.user?.id === authUser.id || authUser.role === "admin")}
+                onDelete={handleDelete}
+              />
+            ))}
           </AnimatePresence>
 
           {hasMore && (

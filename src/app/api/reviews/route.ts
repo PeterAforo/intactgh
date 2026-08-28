@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/reviews
 // Body: { productId, rating, comment }
-// Auth: required
+// Auth: required — only registered users who have purchased the product can review.
 export async function POST(request: NextRequest) {
   const user = await getAuthUser(request);
   if (!user) {
@@ -67,13 +67,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Product not found." }, { status: 404 });
   }
 
-  // One review per user per product
-  const existing = await prisma.review.findFirst({ where: { productId, userId: user.id } });
+  // Purchase verification: user must have a non-cancelled order containing this product.
+  const verifiedOrder = await prisma.order.findFirst({
+    where: {
+      userId: user.id,
+      status: { not: "cancelled" },
+      OR: [
+        { paymentStatus: "paid" },
+        { status: { in: ["confirmed", "delivered", "completed"] } },
+      ],
+      items: { some: { productId } },
+    },
+    select: { id: true },
+  });
+
+  if (!verifiedOrder) {
+    return NextResponse.json(
+      { error: "Only customers who have purchased this product can review it." },
+      { status: 403 }
+    );
+  }
+
+  // One review per user per product — enforced by @@unique([productId, userId])
+  const existing = await prisma.review.findUnique({
+    where: { productId_userId: { productId, userId: user.id } },
+  });
+
   if (existing) {
     // Update existing review
     const updated = await prisma.review.update({
       where: { id: existing.id },
-      data: { rating, comment: comment?.trim() ?? null },
+      data: { rating, comment: comment?.trim() ?? null, verifiedPurchase: true },
       include: { user: { select: { id: true, name: true, avatar: true } } },
     });
     await recalcProductRating(productId);
@@ -82,7 +106,7 @@ export async function POST(request: NextRequest) {
 
   // Create new review
   const review = await prisma.review.create({
-    data: { productId, userId: user.id, rating, comment: comment?.trim() ?? null },
+    data: { productId, userId: user.id, rating, comment: comment?.trim() ?? null, verifiedPurchase: true },
     include: { user: { select: { id: true, name: true, avatar: true } } },
   });
 
@@ -92,7 +116,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Recalculates and persists product.rating + reviewCount
-async function recalcProductRating(productId: string) {
+export async function recalcProductRating(productId: string) {
   const agg = await prisma.review.aggregate({
     where: { productId },
     _avg: { rating: true },
