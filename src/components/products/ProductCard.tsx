@@ -160,7 +160,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                     key={i}
                     className={`w-3.5 h-3.5 ${
                       i < Math.round(product.rating)
-                        ? "text-gold fill-gold"
+                        ? "text-yellow-400 fill-yellow-400"
                         : "text-border"
                     }`}
                   />

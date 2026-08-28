@@ -221,7 +221,7 @@ export default function ProductDetailPage() {
                   <Star
                     key={i}
                     className={`w-5 h-5 ${
-                      i < Math.round(product.rating) ? "text-gold fill-gold" : "text-border"
+                      i < Math.round(product.rating) ? "text-yellow-400 fill-yellow-400" : "text-border"
                     }`}
                   />
                 ))}
