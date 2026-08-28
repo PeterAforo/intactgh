@@ -93,7 +93,7 @@ model Product {
   featured      Boolean        @default(false)
   isNew         Boolean        @default(false)
   onSale        Boolean        @default(false)
-  rating        Float          @default(0)
+  rating        Float          @default(5)
   reviewCount   Int            @default(0)
   specs         String?
   tags          String?

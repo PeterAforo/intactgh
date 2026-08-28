@@ -227,7 +227,7 @@ export default function ReviewsSection({ productId, productRating, reviewCount }
     } catch { setSubmitError("Something went wrong while deleting."); }
   };
 
-  const avgRating = total > 0 ? productRating : 0;
+  const avgRating = productRating || 5;
 
   return (
     <div className="max-w-3xl">

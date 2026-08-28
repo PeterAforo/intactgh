@@ -125,7 +125,7 @@ export async function recalcProductRating(productId: string) {
   await prisma.product.update({
     where: { id: productId },
     data: {
-      rating: Math.round((agg._avg.rating ?? 0) * 10) / 10,
+      rating: Math.round((agg._avg.rating ?? 5) * 10) / 10,
       reviewCount: agg._count.rating,
     },
   });
