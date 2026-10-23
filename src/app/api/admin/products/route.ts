@@ -41,6 +41,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Lightweight mode: return only matching product IDs (used for bulk-select in pickers)
+  if (searchParams.get("idsOnly") === "true") {
+    const ids = await prisma.product.findMany({ where, select: { id: true } });
+    return NextResponse.json({ ids: ids.map((p) => p.id), total: ids.length });
+  }
+
   const [products, total] = await Promise.all([
     prisma.product.findMany({
       where,
