@@ -487,6 +487,12 @@ model StoreEvent {
   @@index([resellerId, createdAt])
 }
 
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
 model CategoryMargin {
   id            String   @id @default(cuid())
   categoryId    String   @unique
