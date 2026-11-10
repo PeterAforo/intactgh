@@ -461,6 +461,11 @@ model Reseller {
   commissionBalance  Float            @default(0)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+  referralCode       String?          @unique @default(cuid())
+  referredById       String?
+  referralBonusPaid  Float            @default(0)
+  referredBy         Reseller?        @relation("Referrals", fields: [referredById], references: [id])
+  referrals          Reseller[]       @relation("Referrals")
   orders             ResellerOrder[]
   clients            ResellerClient[]
   invoices           Invoice[]
@@ -469,6 +474,17 @@ model Reseller {
 
   @@index([status])
   @@index([storeSlug])
+}
+
+model StoreEvent {
+  id         String   @id @default(cuid())
+  resellerId String
+  type       String   // store_view | product_view | share_click
+  productId  String?
+  sessionKey String
+  createdAt  DateTime @default(now())
+
+  @@index([resellerId, createdAt])
 }
 
 model CategoryMargin {
