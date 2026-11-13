@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import {
   Search, Handshake, CheckCircle, XCircle, Clock, Eye, Edit, ExternalLink,
   ShoppingCart, Users, Wallet, KeyRound, Upload, Link2, Loader2, X,
+  Ban, Trash2, UserCheck, RotateCcw, Send,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
@@ -36,7 +37,8 @@ type Reseller = {
   commissionBalance: number;
   createdAt: string;
   user: ResellerUser;
-  _count: { orders: number; clients: number };
+  _count: { orders: number; clients: number; invoices: number; payouts: number; promotions: number; referrals: number };
+  activityCount: number;
 };
 
 type ResellerForm = {
@@ -66,12 +68,14 @@ const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   approved: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
+  suspended: "bg-orange-100 text-orange-700",
 };
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   pending: <Clock className="w-3.5 h-3.5" />,
   approved: <CheckCircle className="w-3.5 h-3.5" />,
   rejected: <XCircle className="w-3.5 h-3.5" />,
+  suspended: <Ban className="w-3.5 h-3.5" />,
 };
 
 const emptyForm: ResellerForm = {
@@ -197,6 +201,9 @@ export default function ResellersPage() {
   const [form, setForm] = useState<ResellerForm>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [resettingLogin, setResettingLogin] = useState(false);
+  const [settingPassword, setSettingPassword] = useState(false);
+  const [activatingId, setActivatingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState<"picture" | "nationalIdImage" | "">("");
 
@@ -368,6 +375,78 @@ export default function ResellersPage() {
     }
   };
 
+  const activateReseller = async (id: string) => {
+    setActivatingId(id);
+    try {
+      const res = await fetch(`/api/admin/resellers/${id}/activate`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to activate reseller");
+      setResellers((prev) => prev.map((r) => (r.id === id ? { ...data, activityCount: r.activityCount } : r)));
+      setSelectedReseller((prev) => (prev?.id === id ? { ...data, activityCount: prev.activityCount } : prev));
+      toast.success("Reseller fully activated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to activate reseller");
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
+  const handleSetPassword = async () => {
+    if (!selectedReseller) return;
+    const email = selectedReseller.user.email;
+    if (!confirm(`Generate a new temporary password and email it to ${email}? Their current password will stop working immediately.`)) return;
+
+    setSettingPassword(true);
+    try {
+      const res = await fetch(`/api/admin/resellers/${selectedReseller.id}/set-password`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok && !data.updated) throw new Error(data.error || "Failed to set password");
+      if (data.emailSent) {
+        toast.success("New password generated and emailed");
+      } else {
+        toast.error("Password updated, but the credentials email could not be sent");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to set password");
+    } finally {
+      setSettingPassword(false);
+    }
+  };
+
+  const formatActivity = (activity: Record<string, number>) =>
+    Object.entries(activity)
+      .filter(([, n]) => n > 0)
+      .map(([k, n]) => `${n} ${k}`)
+      .join(", ");
+
+  const handleDeleteReseller = async (target: Reseller) => {
+    if ((target.activityCount ?? 0) > 0) {
+      toast.error("This reseller has activity on the platform and cannot be deleted");
+      return;
+    }
+    const label = target.user.name || target.storeName;
+    if (!confirm(`Permanently delete ${label}'s account and store? This cannot be undone.`)) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/resellers/${target.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.status === 409) {
+        toast.error(`Cannot delete — has activity: ${formatActivity(data.activity || {})}`);
+        await fetchResellers(false);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || "Failed to delete reseller");
+      setResellers((prev) => prev.filter((r) => r.id !== target.id));
+      setSelectedReseller((prev) => (prev?.id === target.id ? null : prev));
+      toast.success("Reseller account deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete reseller");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const filteredResellers = resellers.filter((r) => {
     const matchesFilter = filter === "all" || r.status === filter;
     const q = search.trim().toLowerCase();
@@ -388,6 +467,7 @@ export default function ResellersPage() {
     pending: resellers.filter((r) => r.status === "pending").length,
     approved: resellers.filter((r) => r.status === "approved").length,
     rejected: resellers.filter((r) => r.status === "rejected").length,
+    suspended: resellers.filter((r) => r.status === "suspended").length,
   };
 
   return (
@@ -397,12 +477,13 @@ export default function ResellersPage() {
         <p className="text-text-muted">Manage IntactConnect reseller accounts</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label: "Total Resellers", value: stats.total, icon: Handshake, color: "bg-accent" },
           { label: "Pending Approval", value: stats.pending, icon: Clock, color: "bg-yellow-500" },
           { label: "Approved", value: stats.approved, icon: CheckCircle, color: "bg-green-600" },
           { label: "Rejected", value: stats.rejected, icon: XCircle, color: "bg-red-600" },
+          { label: "Suspended", value: stats.suspended, icon: Ban, color: "bg-orange-500" },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
@@ -423,7 +504,7 @@ export default function ResellersPage() {
 
       <div className="bg-white rounded-xl p-4 border border-border shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-2 w-full md:w-auto">
-          {(["all", "pending", "approved", "rejected"] as const).map((s) => (
+          {(["all", "pending", "approved", "rejected", "suspended"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setFilter(s)}
@@ -500,6 +581,9 @@ export default function ResellersPage() {
                         </button>
                         {r.status === "pending" && (
                           <>
+                            <button onClick={() => activateReseller(r.id)} disabled={activatingId === r.id} className="p-1.5 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50" title="Fully Activate">
+                              {activatingId === r.id ? <Loader2 className="w-4 h-4 animate-spin text-green-600" /> : <UserCheck className="w-4 h-4 text-green-600" />}
+                            </button>
                             <button onClick={() => updateStatus(r.id, "approved")} disabled={updatingId === r.id} className="p-1.5 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50" title="Approve">
                               <CheckCircle className="w-4 h-4 text-green-600" />
                             </button>
@@ -509,10 +593,33 @@ export default function ResellersPage() {
                           </>
                         )}
                         {r.status === "rejected" && (
-                          <button onClick={() => updateStatus(r.id, "approved")} disabled={updatingId === r.id} className="p-1.5 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50" title="Re-approve">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          <>
+                            <button onClick={() => activateReseller(r.id)} disabled={activatingId === r.id} className="p-1.5 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50" title="Fully Activate">
+                              {activatingId === r.id ? <Loader2 className="w-4 h-4 animate-spin text-green-600" /> : <UserCheck className="w-4 h-4 text-green-600" />}
+                            </button>
+                            <button onClick={() => updateStatus(r.id, "approved")} disabled={updatingId === r.id} className="p-1.5 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50" title="Re-approve">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            </button>
+                          </>
+                        )}
+                        {r.status === "approved" && (
+                          <button onClick={() => updateStatus(r.id, "suspended")} disabled={updatingId === r.id} className="p-1.5 hover:bg-orange-50 rounded-lg transition-colors disabled:opacity-50" title="Suspend">
+                            <Ban className="w-4 h-4 text-orange-600" />
                           </button>
                         )}
+                        {r.status === "suspended" && (
+                          <button onClick={() => updateStatus(r.id, "approved")} disabled={updatingId === r.id} className="p-1.5 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50" title="Unsuspend">
+                            <RotateCcw className="w-4 h-4 text-green-600" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteReseller(r)}
+                          disabled={deleting || updatingId === r.id || activatingId === r.id || r.activityCount > 0}
+                          className={`p-1.5 rounded-lg transition-colors disabled:opacity-40 ${r.activityCount > 0 ? "text-text-muted/40 cursor-not-allowed" : "hover:bg-red-50 text-red-600"}`}
+                          title={r.activityCount > 0 ? "Cannot delete — reseller has platform activity" : "Delete Account"}
+                        >
+                          {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -525,7 +632,7 @@ export default function ResellersPage() {
 
       {selectedReseller && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => !saving && !resettingLogin && setSelectedReseller(null)} />
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => !saving && !resettingLogin && !settingPassword && !deleting && setSelectedReseller(null)} />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -537,7 +644,7 @@ export default function ResellersPage() {
                   <h2 className="text-lg font-bold text-text">{editing ? "Edit Reseller" : "Reseller Details"}</h2>
                   <p className="text-sm text-text-muted">{selectedReseller.storeName} · /{selectedReseller.storeSlug}</p>
                 </div>
-                <button onClick={() => setSelectedReseller(null)} disabled={saving || resettingLogin} className="text-text-muted hover:text-text text-xl disabled:opacity-50">&times;</button>
+                <button onClick={() => setSelectedReseller(null)} disabled={saving || resettingLogin || settingPassword || deleting} className="text-text-muted hover:text-text text-xl disabled:opacity-50">&times;</button>
               </div>
 
               {editing ? (
@@ -756,12 +863,66 @@ export default function ResellersPage() {
                     </div>
                   </div>
 
+                  {(selectedReseller.activityCount ?? 0) > 0 && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-800">
+                      This reseller has platform activity ({selectedReseller.activityCount} records) and cannot be deleted.
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
                     <button
                       onClick={() => openEdit(selectedReseller)}
                       className="flex-1 min-w-[140px] bg-accent text-white py-2.5 rounded-lg font-medium text-sm hover:bg-accent/90 transition-colors inline-flex items-center justify-center gap-2"
                     >
                       <Edit className="w-4 h-4" /> Edit Profile
+                    </button>
+                    {selectedReseller.status === "pending" && (
+                      <button
+                        onClick={() => activateReseller(selectedReseller.id)}
+                        disabled={activatingId === selectedReseller.id}
+                        className="flex-1 min-w-[140px] bg-green-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-green-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                      >
+                        {activatingId === selectedReseller.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                        Fully Activate
+                      </button>
+                    )}
+                    {selectedReseller.status === "approved" && (
+                      <button
+                        onClick={() => updateStatus(selectedReseller.id, "suspended")}
+                        disabled={updatingId === selectedReseller.id}
+                        className="flex-1 min-w-[120px] bg-orange-500 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-orange-600 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                      >
+                        {updatingId === selectedReseller.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                        Suspend
+                      </button>
+                    )}
+                    {selectedReseller.status === "suspended" && (
+                      <button
+                        onClick={() => updateStatus(selectedReseller.id, "approved")}
+                        disabled={updatingId === selectedReseller.id}
+                        className="flex-1 min-w-[120px] bg-green-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-green-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                      >
+                        {updatingId === selectedReseller.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                        Unsuspend
+                      </button>
+                    )}
+                    {selectedReseller.status === "rejected" && (
+                      <button
+                        onClick={() => activateReseller(selectedReseller.id)}
+                        disabled={activatingId === selectedReseller.id}
+                        className="flex-1 min-w-[140px] bg-green-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-green-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                      >
+                        {activatingId === selectedReseller.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                        Fully Activate
+                      </button>
+                    )}
+                    <button
+                      onClick={handleSetPassword}
+                      disabled={settingPassword}
+                      className="flex-1 min-w-[180px] border border-border text-text py-2.5 rounded-lg font-medium text-sm hover:bg-surface transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                    >
+                      {settingPassword ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      Email New Password
                     </button>
                     <button
                       onClick={handleResetLogin}
@@ -808,6 +969,15 @@ export default function ResellersPage() {
                         <ExternalLink className="w-4 h-4" /> View Store
                       </a>
                     )}
+                    <button
+                      onClick={() => handleDeleteReseller(selectedReseller)}
+                      disabled={deleting || (selectedReseller.activityCount ?? 0) > 0}
+                      className="flex-1 min-w-[120px] bg-red-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-red-700 transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                      title={(selectedReseller.activityCount ?? 0) > 0 ? "Cannot delete — reseller has platform activity" : "Delete Account"}
+                    >
+                      {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      Delete
+                    </button>
                   </div>
                 </div>
               )}

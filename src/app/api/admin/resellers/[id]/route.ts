@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { verifyStaff } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
-import { sendEmail, emailLayout } from "@/lib/email";
+import { sendResellerStatusEmail } from "@/lib/reseller-notifications";
 
 const resellerUserSelect = {
   id: true,
@@ -17,7 +17,7 @@ const resellerUserSelect = {
 } as const;
 
 const VALID_ID_TYPES = new Set(["ghana_card", "voter_id", "passport", "nhis", "driver_license"]);
-const VALID_STATUSES = new Set(["pending", "approved", "rejected"]);
+const VALID_STATUSES = new Set(["pending", "approved", "rejected", "suspended"]);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -50,7 +50,7 @@ export async function GET(
     where: { id },
     include: {
       user: { select: resellerUserSelect },
-      _count: { select: { orders: true, clients: true, invoices: true, payouts: true } },
+      _count: { select: { orders: true, clients: true, invoices: true, payouts: true, promotions: true, referrals: true } },
     },
   });
 
@@ -201,7 +201,7 @@ export async function PUT(
       where: { id },
       include: {
         user: { select: resellerUserSelect },
-        _count: { select: { orders: true, clients: true, invoices: true, payouts: true } },
+        _count: { select: { orders: true, clients: true, invoices: true, payouts: true, promotions: true, referrals: true } },
       },
     });
 
@@ -219,32 +219,14 @@ export async function PUT(
     }
 
     // Preserve status-change notification emails
-    if (status && status !== reseller.status) {
+    if (status && status !== reseller.status && (status === "approved" || status === "rejected" || status === "suspended")) {
       try {
-        const baseUrl = (process.env.CONNECT_APP_URL || "https://www.intactconnect.com.gh").replace(/\/+$/, "");
-        if (status === "approved") {
-          await sendEmail(
-            updated.user.email,
-            "Your IntactConnect account has been approved!",
-            emailLayout("Account Approved", `
-              <h2 style="color:#333">Congratulations, ${updated.user.name}!</h2>
-              <p>Your IntactConnect reseller account has been <strong style="color:#22c55e">approved</strong>.</p>
-              <p>You can now log in and start selling:</p>
-              <a href="${baseUrl}/login" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;margin:16px 0;">Go to Dashboard</a>
-              <p style="color:#666">Your store URL: <a href="${baseUrl}/store/${updated.storeSlug}">${baseUrl}/store/${updated.storeSlug}</a></p>
-            `)
-          );
-        } else if (status === "rejected") {
-          await sendEmail(
-            updated.user.email,
-            "IntactConnect account update",
-            emailLayout("Account Update", `
-              <h2 style="color:#333">Account Update</h2>
-              <p>Hi ${updated.user.name}, unfortunately your reseller application was not approved at this time.</p>
-              <p>If you believe this was in error, please contact us at <a href="mailto:support@intactghana.com">support@intactghana.com</a>.</p>
-            `)
-          );
-        }
+        await sendResellerStatusEmail({
+          status,
+          userName: updated.user.name,
+          userEmail: updated.user.email,
+          storeSlug: updated.storeSlug,
+        });
       } catch (e) {
         console.error("Failed to send reseller status email:", e);
       }
@@ -268,11 +250,55 @@ export async function DELETE(
     const { id } = await params;
     const reseller = await prisma.reseller.findUnique({
       where: { id },
-      select: { id: true, storeName: true, storeSlug: true, user: { select: { email: true } } },
+      select: {
+        id: true,
+        storeName: true,
+        storeSlug: true,
+        userId: true,
+        user: { select: { email: true } },
+        _count: {
+          select: {
+            orders: true,
+            clients: true,
+            invoices: true,
+            payouts: true,
+            promotions: true,
+            referrals: true,
+          },
+        },
+      },
     });
     if (!reseller) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    await prisma.reseller.delete({ where: { id } });
+    const [storeEvents, userOrders, userReviews, processedPayouts] = await Promise.all([
+      prisma.storeEvent.count({ where: { resellerId: id } }),
+      prisma.order.count({ where: { userId: reseller.userId } }),
+      prisma.review.count({ where: { userId: reseller.userId } }),
+      prisma.payout.count({ where: { processedById: reseller.userId } }),
+    ]);
+
+    const activity: Record<string, number> = {
+      orders: reseller._count.orders,
+      clients: reseller._count.clients,
+      invoices: reseller._count.invoices,
+      payouts: reseller._count.payouts,
+      promotions: reseller._count.promotions,
+      referrals: reseller._count.referrals,
+      storeEvents,
+      userOrders,
+      userReviews,
+      processedPayouts,
+    };
+    const totalActivity = Object.values(activity).reduce((sum, n) => sum + n, 0);
+
+    if (totalActivity > 0) {
+      return NextResponse.json(
+        { error: "Cannot delete reseller with existing activity", activity },
+        { status: 409 }
+      );
+    }
+
+    await prisma.user.delete({ where: { id: reseller.userId } });
 
     if (auth.user) {
       await logAudit({
@@ -280,7 +306,7 @@ export async function DELETE(
         action: "delete",
         entity: "reseller",
         entityId: id,
-        details: { storeName: reseller.storeName, storeSlug: reseller.storeSlug, email: reseller.user.email },
+        details: { storeName: reseller.storeName, storeSlug: reseller.storeSlug, email: reseller.user.email, userId: reseller.userId },
         request,
       });
     }
