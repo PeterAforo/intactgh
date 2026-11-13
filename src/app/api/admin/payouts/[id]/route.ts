@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyStaff, getAuthUser } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sendEmail, emailLayout } from "@/lib/email";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const staff = await verifyStaff(request);
-  if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await verifyStaff(request);
+  if (auth.error) return auth.error;
   const { id } = await params;
   const { status, adminNotes } = await request.json();
-  const authUser = await getAuthUser(request);
 
   const payout = await prisma.payout.findUnique({
     where: { id },
@@ -22,7 +21,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     data.status = status;
     if (status === "paid" || status === "rejected") {
       data.processedAt = new Date();
-      data.processedById = authUser?.id;
+      data.processedById = auth.user?.id;
     }
   }
   if (adminNotes !== undefined) data.adminNotes = adminNotes;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { verifyAdmin } from "@/lib/auth";
+import { verifyStaff } from "@/lib/auth";
 
 function signCloudinary(
   params: Record<string, string>,
@@ -14,7 +14,7 @@ function signCloudinary(
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyAdmin(request);
+  const auth = await verifyStaff(request);
   if (auth.error) return auth.error;
 
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;

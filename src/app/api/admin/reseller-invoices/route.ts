@@ -3,8 +3,8 @@ import { verifyStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
-  const staff = await verifyStaff(request);
-  if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await verifyStaff(request);
+  if (auth.error) return auth.error;
 
   const url = new URL(request.url);
   const status = url.searchParams.get("status");

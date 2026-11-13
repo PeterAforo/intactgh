@@ -3,8 +3,8 @@ import { verifyStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
-  const staff = await verifyStaff(request);
-  if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await verifyStaff(request);
+  if (auth.error) return auth.error;
 
   const categories = await prisma.category.findMany({
     where: { parentId: null },
@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const staff = await verifyStaff(request);
-  if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await verifyStaff(request);
+  if (auth.error) return auth.error;
 
   const { categoryId, marginPercent } = await request.json();
   if (!categoryId || marginPercent === undefined) {

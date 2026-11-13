@@ -3,8 +3,8 @@ import { verifyStaff } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
-  const staff = await verifyStaff(request);
-  if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await verifyStaff(request);
+  if (auth.error) return auth.error;
 
   const url = new URL(request.url);
   const status = url.searchParams.get("status");
@@ -15,8 +15,12 @@ export async function GET(request: NextRequest) {
   if (search) {
     where.OR = [
       { storeName: { contains: search, mode: "insensitive" } },
-      { user: { name: { contains: search, mode: "insensitive" } } },
+      { storeSlug: { contains: search, mode: "insensitive" } },
+      { phone: { contains: search, mode: "insensitive" } },
       { email: { contains: search, mode: "insensitive" } },
+      { user: { name: { contains: search, mode: "insensitive" } } },
+      { user: { email: { contains: search, mode: "insensitive" } } },
+      { user: { phone: { contains: search, mode: "insensitive" } } },
     ];
   }
 
@@ -24,7 +28,18 @@ export async function GET(request: NextRequest) {
     where,
     orderBy: { createdAt: "desc" },
     include: {
-      user: { select: { name: true, email: true } },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          createdAt: true,
+          emailVerified: true,
+          loginAttempts: true,
+          lockedUntil: true,
+        },
+      },
       _count: { select: { orders: true, clients: true } },
     },
   });

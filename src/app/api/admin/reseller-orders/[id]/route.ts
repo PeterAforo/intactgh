@@ -4,8 +4,8 @@ import { prisma } from "@/lib/db";
 import { sendEmail, emailLayout } from "@/lib/email";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const staff = await verifyStaff(request);
-  if (!staff) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await verifyStaff(request);
+  if (auth.error) return auth.error;
   const { id } = await params;
   const body = await request.json();
   const { status, paymentStatus } = body;
