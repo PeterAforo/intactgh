@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generateOrderNumber } from "@/lib/utils";
 import { sendCustomerOrderEmail, sendAdminOrderEmail, type OrderEmailData } from "@/lib/email";
@@ -106,8 +107,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function fireOrderNotifications(order: any, customerName: string, shippingEmail?: string) {
+type CreatedOrder = Prisma.OrderGetPayload<{
+  include: {
+    items: {
+      include: {
+        product: {
+          select: {
+            name: true;
+            slug: true;
+            images: { orderBy: { order: "asc" }; take: number; select: { url: true } };
+          };
+        };
+      };
+    };
+    user: { select: { name: true; email: true; phone: true } };
+  };
+}>;
+
+async function fireOrderNotifications(order: CreatedOrder, customerName: string, shippingEmail?: string) {
   console.log("[Notifications] Starting for order:", order.orderNumber);
   
   // Fetch notification settings from DB
@@ -152,7 +169,7 @@ async function fireOrderNotifications(order: any, customerName: string, shipping
     deliveryFee: order.shipping ?? 0,
     total: order.total,
     notes: order.notes,
-    items: order.items.map((item: any) => ({
+    items: order.items.map((item) => ({
       name: item.product.name,
       quantity: item.quantity,
       price: item.price,

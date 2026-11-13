@@ -103,14 +103,11 @@ export default function ChatBot() {
     setShowScrollBtn(distFromBottom > 120);
   };
 
-  // Focus input when chat opens; dismiss idle popup on open
+  // Focus input when chat opens
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 200);
-      setShowBadge(false);
-      setIdlePopup(false);
-      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
-    }
+    if (!isOpen) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 200);
+    return () => clearTimeout(t);
   }, [isOpen]);
 
   // Idle popup: fires after 5s of no user activity while chat is closed
@@ -145,11 +142,22 @@ export default function ChatBot() {
     return () => document.removeEventListener("keydown", handler);
   }, [isOpen]);
 
+  const openChat = () => {
+    setIsOpen(true);
+    setShowBadge(false);
+    setIdlePopup(false);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+  };
+
   const handleToggleChat = () => {
     const next = !isOpen;
-    setIsOpen(next);
-    if (next) chatAnalytics.chatOpened();
-    else chatAnalytics.chatClosed();
+    if (next) {
+      openChat();
+      chatAnalytics.chatOpened();
+    } else {
+      setIsOpen(false);
+      chatAnalytics.chatClosed();
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -185,7 +193,7 @@ export default function ChatBot() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
               className="relative bg-white border border-gray-200 shadow-lg rounded-2xl rounded-br-sm px-4 py-2.5 text-sm text-gray-700 max-w-[220px] cursor-pointer"
-              onClick={() => setIsOpen(true)}
+              onClick={openChat}
             >
               👋 Hi! Need help finding something?
               <span className="absolute -bottom-1.5 right-4 w-3 h-3 bg-white border-r border-b border-gray-200 rotate-45" />
@@ -202,7 +210,7 @@ export default function ChatBot() {
               exit={{ opacity: 0, y: 10, scale: 0.88 }}
               transition={{ type: "spring", stiffness: 340, damping: 24 }}
               className="relative bg-[#0052cc] text-white shadow-xl rounded-2xl rounded-br-sm px-4 py-3 text-sm max-w-[230px] cursor-pointer"
-              onClick={() => { setIdlePopup(false); setIsOpen(true); }}
+              onClick={openChat}
             >
               <p className="font-semibold text-[13px]">👋 Still there?</p>
               <p className="text-white/80 text-[12px] mt-0.5">I can help you find products, check prices or track an order!</p>

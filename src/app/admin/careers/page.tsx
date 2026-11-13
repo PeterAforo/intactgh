@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Plus, Trash2, Edit2, Save, X, Users, Eye,
-  CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, Loader2,
+  CheckCircle, XCircle, ChevronDown, ChevronUp, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

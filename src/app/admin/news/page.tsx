@@ -21,7 +21,6 @@ export default function AdminNewsPage() {
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
   const [image, setImage] = useState("");
-  const [published, setPublished] = useState(true);
   const [posts, setPosts] = useState<Any[]>([]);
 
   const fetchPosts = useCallback(() => {
@@ -32,11 +31,11 @@ export default function AdminNewsPage() {
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
-  const resetForm = () => { setEditId(null); setTitle(""); setSlug(""); setExcerpt(""); setContent(""); setImage(""); setPublished(true); setShowForm(false); };
+  const resetForm = () => { setEditId(null); setTitle(""); setSlug(""); setExcerpt(""); setContent(""); setImage(""); setShowForm(false); };
 
   const handleEdit = (p: Any) => {
     setEditId(p.id); setTitle(p.title); setSlug(p.slug); setExcerpt(p.excerpt || "");
-    setContent(p.content || ""); setImage(p.image || ""); setPublished(p.published); setShowForm(true);
+    setContent(p.content || ""); setImage(p.image || ""); setShowForm(true);
   };
 
   const handleSubmit = async (pub: boolean) => {

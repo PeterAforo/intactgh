@@ -116,7 +116,7 @@ export default function AdminCategoriesPage() {
   };
 
   const toggle = (id: string) =>
-    setCollapsed((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setCollapsed((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const { parents, childMap } = useMemo(() => {
     const ps = categories.filter((c: Any) => !c.parentId);

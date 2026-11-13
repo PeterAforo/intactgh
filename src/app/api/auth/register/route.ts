@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const verifyToken = crypto.randomBytes(32).toString("hex");
     const verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name,
         email,

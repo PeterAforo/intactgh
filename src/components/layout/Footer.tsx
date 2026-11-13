@@ -8,7 +8,6 @@ import {
   Phone,
   Mail,
   MapPin,
-  ExternalLink,
   Send,
   Truck,
   RotateCcw,

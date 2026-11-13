@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -92,17 +92,22 @@ export default function AdminLayout({
   const [authChecked, setAuthChecked] = useState(false);
 
   // Track which groups are open — auto-open the group containing the active page
-  const getActiveGroup = () => {
+  const getActiveGroup = useCallback(() => {
     for (const g of sidebarGroups) {
       if (g.label && g.links.some(l => l.href === pathname || (l.href !== "/admin" && pathname.startsWith(l.href)))) return g.label;
     }
     return "";
-  };
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  useEffect(() => {
+  }, [pathname]);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
+    const active = getActiveGroup();
+    return active ? { [active]: true } : {};
+  });
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
     const active = getActiveGroup();
     if (active) setOpenGroups(prev => ({ ...prev, [active]: true }));
-  }, [pathname]);
+  }
 
   const toggleGroup = (label: string) => setOpenGroups(prev => ({ ...prev, [label]: !prev[label] }));
 

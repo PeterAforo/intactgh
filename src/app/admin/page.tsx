@@ -115,7 +115,9 @@ export default function AdminDashboard() {
     setLoading(true);
     fetch("/api/admin/dashboard").then(r => r.json()).then(d => setData(d)).catch(() => {}).finally(() => setLoading(false));
   };
-  useEffect(fetchData, []);
+  useEffect(() => {
+    fetch("/api/admin/dashboard").then(r => r.json()).then(d => setData(d)).catch(() => {}).finally(() => setLoading(false));
+  }, []);
 
   const stats = data.stats ?? { totalRevenue: 0, totalOrders: 0, totalProducts: 0, totalCustomers: 0 };
   const salesTrend: Any[] = data.salesTrend ?? [];

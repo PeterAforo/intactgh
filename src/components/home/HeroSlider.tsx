@@ -15,16 +15,18 @@ interface HeroSliderProps {
 
 export default function HeroSlider({ slides: propSlides }: HeroSliderProps) {
   const [current, setCurrent] = useState(0);
-  const [slides, setSlides] = useState<Slide[]>([]);
+  const [fetchedSlides, setFetchedSlides] = useState<Slide[]>([]);
   const slideRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (propSlides?.length) { setSlides(propSlides); return; }
+    if (propSlides?.length) return;
     fetch("/api/hero-slides").then(r => r.json()).then(d => {
-      if (d.slides?.length) setSlides(d.slides);
+      if (d.slides?.length) setFetchedSlides(d.slides);
     }).catch(() => {});
   }, [propSlides]);
+
+  const slides = propSlides?.length ? propSlides : fetchedSlides;
 
   useEffect(() => {
     const interval = setInterval(() => {

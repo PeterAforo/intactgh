@@ -5,11 +5,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  SlidersHorizontal,
   Grid3X3,
   LayoutList,
   ChevronDown,
-  X,
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +32,8 @@ export default function CategoryPage() {
   const [allCategories, setAllCategories] = useState<Any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Any[]>([]);
   const [categoryBrands, setCategoryBrands] = useState<Any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
+  const loading = loadedSlug !== slug;
 
   const [search, setSearch] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -44,7 +43,6 @@ export default function CategoryPage() {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
 
   useEffect(() => {
-    setLoading(true);
     Promise.all([
       fetch("/api/categories").then(r => r.json()).then(d => {
         if (d.categories) {
@@ -56,7 +54,7 @@ export default function CategoryPage() {
       fetch("/api/brands").then(r => r.json()).then(d => {
         if (d.brands) setCategoryBrands(d.brands);
       }),
-    ]).catch(() => {}).finally(() => setLoading(false));
+    ]).catch(() => {}).finally(() => setLoadedSlug(slug));
   }, [slug]);
 
   const fetchProducts = useCallback(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -11,8 +11,10 @@ import { useCartPopupStore } from "@/store/cart-popup-store";
 import { useCartStore } from "@/store/cart-store";
 import { formatPrice } from "@/lib/utils";
 
+const noopSubscribe = () => () => {};
+
 export default function CartAddedPopup() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const isOpen = useCartPopupStore((s) => s.isOpen);
   const product = useCartPopupStore((s) => s.product);
   const quantity = useCartPopupStore((s) => s.quantity);
@@ -23,8 +25,6 @@ export default function CartAddedPopup() {
   // Derive cart totals from items directly (not via method calls)
   const cartItemCount = items.reduce((c, item) => c + item.quantity, 0);
   const cartTotal = items.reduce((t, item) => t + item.product.price * item.quantity, 0);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const handleCheckout = () => {
     close();

@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { amount, description, customerName, customerEmail, orderNumber } = body;
+    const { amount, description, orderNumber } = body;
 
     if (!amount) {
       return NextResponse.json(

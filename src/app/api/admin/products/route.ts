@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      name, slug, description, price, comparePrice, costPrice, sku, stock,
+      name, slug, description, price, comparePrice, costPrice, stock,
       categoryId, brandId, featured, isNew, onSale, tags, images, specs, videoUrl, variants,
     } = body;
 

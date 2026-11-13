@@ -31,7 +31,6 @@ export default function PromotionsPage() {
   const PRODUCTS_PER_PAGE = 12;
 
   useEffect(() => {
-    setLoading(true);
     Promise.all([
       fetch("/api/promotions").then(r => r.json()).then(d => {
         if (d.promotions) setPromotions(d.promotions);

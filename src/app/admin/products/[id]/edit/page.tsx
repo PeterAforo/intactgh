@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Upload, Camera, Sparkles, X, Plus, Save,
-  Wand2, Tag, RefreshCw, TrendingUp, TrendingDown,
+  Wand2, Tag, TrendingUp, TrendingDown,
   Video, Crop, Maximize2, ScanLine, Layers, Zap, ChevronDown, ChevronUp,
   AlertCircle, CheckCircle2, Loader2,
 } from "lucide-react";

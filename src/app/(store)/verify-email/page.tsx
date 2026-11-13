@@ -11,15 +11,13 @@ export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
 
-  const [status, setStatus] = useState<"loading" | "success" | "error" | "no-token">("loading");
-  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"loading" | "success" | "error" | "no-token">(
+    token ? "loading" : "no-token"
+  );
+  const [message, setMessage] = useState(token ? "" : "No verification token provided.");
 
   useEffect(() => {
-    if (!token) {
-      setStatus("no-token");
-      setMessage("No verification token provided.");
-      return;
-    }
+    if (!token) return;
 
     fetch("/api/auth/verify-email", {
       method: "POST",

@@ -41,7 +41,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     const {
-      name, slug, description, price, comparePrice, costPrice, sku, stock,
+      name, slug, description, price, comparePrice, costPrice, stock,
       categoryId, brandId, featured, isNew, onSale, tags, specs, status, images, variants, videoUrl,
     } = body;
 

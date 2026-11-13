@@ -387,6 +387,7 @@ export function useChatbot() {
       leadState,
       pendingNewsletterEmail,
       messages,
+      session,
       addMessage,
       buildHistory,
       callChatAPI,

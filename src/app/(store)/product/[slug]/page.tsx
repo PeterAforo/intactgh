@@ -127,6 +127,8 @@ export default function ProductDetailPage() {
     };
     addItem(cartProduct, quantity);
     openCartPopup(cartProduct, quantity);
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
   };
 
   return (

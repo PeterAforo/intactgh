@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState, useCallback } from "react";
 import { Wallet, CheckCircle, XCircle, Clock, Loader2, MessageSquare } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -26,11 +25,11 @@ export default function PayoutsPage() {
   const [adminNotes, setAdminNotes] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     const params = filter !== "all" ? `?status=${filter}` : "";
     fetch(`/api/admin/payouts${params}`).then(r => r.json()).then(setPayouts).finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [filter]);
+  }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleAction = async () => {
     if (!actionId) return;

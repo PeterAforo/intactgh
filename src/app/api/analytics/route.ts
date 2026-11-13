@@ -126,9 +126,8 @@ export async function GET(request: NextRequest) {
     const avgPagesPerSession = totalSessions > 0 ? Math.round((totalPageViews / totalSessions) * 10) / 10 : 0;
 
     // Serialize bigint
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const serializeBigint = (arr: any[]) =>
-      arr.map((r: any) => ({ ...r, count: Number(r.count) }));
+    const serializeBigint = <T extends { count: bigint }>(arr: T[]) =>
+      arr.map((r) => ({ ...r, count: Number(r.count) }));
 
     return NextResponse.json({
       range,

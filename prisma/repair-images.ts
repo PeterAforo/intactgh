@@ -22,7 +22,6 @@ cloudinary.config({
 
 const SQL_FILE = path.resolve(__dirname, "../../existing_sql/products.sql");
 const IMAGE_DIR = path.resolve(__dirname, "../../existing_sql/products/products");
-const UPLOAD_CONCURRENCY = 5; // lower concurrency to avoid rate limits
 const DELAY_BETWEEN_BATCHES_MS = 2000;
 
 // ─── SQL parser (same as migrate-products.ts) ───────────────────────────────

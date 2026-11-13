@@ -19,14 +19,16 @@ interface BrandShowcaseProps {
 
 export default function BrandShowcase({ brands: propBrands }: BrandShowcaseProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const [fetchedBrands, setFetchedBrands] = useState<Brand[]>([]);
 
   useEffect(() => {
-    if (propBrands?.length) { setBrands(propBrands); return; }
+    if (propBrands?.length) return;
     fetch("/api/brands").then(r => r.json()).then(d => {
-      if (d.brands) setBrands(d.brands);
+      if (d.brands) setFetchedBrands(d.brands);
     }).catch(() => {});
   }, [propBrands]);
+
+  const brands = propBrands?.length ? propBrands : fetchedBrands;
 
   // Show only top 16 brands by product count
   const topBrands = [...brands]

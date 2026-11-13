@@ -28,8 +28,8 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
     });
     dbOk = true;
-  } catch (e: any) {
-    dbError = e.message ?? "Unknown DB error";
+  } catch (e) {
+    dbError = e instanceof Error ? e.message : "Unknown DB error";
   }
 
   const envStatus: Record<string, boolean> = {};
@@ -65,8 +65,8 @@ export async function POST(request: NextRequest) {
         select: { id: true, email: true, role: true },
       });
       return NextResponse.json({ success: true, action: "created", user: created });
-    } catch (e: any) {
-      return NextResponse.json({ error: e.message }, { status: 500 });
+    } catch (e) {
+      return NextResponse.json({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
     }
   }
 
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
       const valid = await bcrypt.compare(password, user.password);
       if (!valid) return NextResponse.json({ success: false, reason: "Password does not match" });
       return NextResponse.json({ success: true, reason: "Credentials are valid", role: user.role });
-    } catch (e: any) {
-      return NextResponse.json({ error: e.message }, { status: 500 });
+    } catch (e) {
+      return NextResponse.json({ error: e instanceof Error ? e.message : "Unknown error" }, { status: 500 });
     }
   }
 

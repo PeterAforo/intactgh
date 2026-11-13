@@ -1,18 +1,6 @@
 // mNotify SMS API v2.0 — https://api.mnotify.com/api/sms/quick
 const MNOTIFY_BASE = "https://api.mnotify.com/api/sms/quick";
 
-const PAYMENT_LABELS: Record<string, string> = {
-  cod: "Cash on Delivery",
-  momo_mtn: "MTN MoMo",
-  momo_vodafone: "Vodafone Cash",
-  momo_airteltigo: "AirtelTigo Money",
-  card: "Card",
-  canpay: "CanPay BNPL",
-  pickup: "Pay at Store",
-};
-
-const GHS = (n: number) => `GHC${n.toFixed(2)}`;
-
 // ── Normalise Ghanaian phone numbers ──────────────────────────────────────────
 function normalizePhone(phone: string): string {
   // Strip spaces, dashes, parentheses
@@ -70,8 +58,7 @@ export async function sendCustomerOrderSMS(params: {
   paymentMethod: string;
   itemCount: number;
 }): Promise<boolean> {
-  const { phone, orderNumber, customerName, total, paymentMethod, itemCount } = params;
-  const payLabel = PAYMENT_LABELS[paymentMethod] ?? paymentMethod;
+  const { phone, orderNumber, customerName } = params;
 
   const message =
     `Hi ${customerName}, thank you for your order ${orderNumber} on Intact Ghana. ` +
@@ -91,8 +78,7 @@ export async function sendAdminOrderSMS(params: {
   paymentMethod: string;
   city: string;
 }): Promise<boolean> {
-  const { phone, orderNumber, customerName, customerPhone, total, paymentMethod, city } = params;
-  const payLabel = PAYMENT_LABELS[paymentMethod] ?? paymentMethod;
+  const { phone, orderNumber, customerName, customerPhone, city } = params;
 
   const message =
     `Order ${orderNumber} received. ` +

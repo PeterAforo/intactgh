@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Truck, Package, Clock, CheckCircle, XCircle, Loader2, ChevronDown } from "lucide-react";
+import React, { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
+import { Truck, Loader2, ChevronDown } from "lucide-react";
 
 interface OrderItem {
   id: string; quantity: number; price: number;
@@ -37,11 +38,11 @@ export default function ResellerOrdersPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     const params = filter !== "all" ? `?status=${filter}` : "";
     fetch(`/api/admin/reseller-orders${params}`).then(r => r.json()).then(setOrders).finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [filter]);
+  }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const updateStatus = async (id: string, status: string) => {
     setUpdating(id);
@@ -122,7 +123,7 @@ export default function ResellerOrdersPage() {
                   <div className="space-y-2 mb-4">
                     {order.items.map(item => (
                       <div key={item.id} className="flex items-center gap-3">
-                        {item.product.images[0] && <img src={item.product.images[0].url} alt="" className="w-8 h-8 rounded object-contain bg-white" />}
+                        {item.product.images[0] && <Image src={item.product.images[0].url} alt="" width={32} height={32} unoptimized className="w-8 h-8 rounded object-contain bg-white" />}
                         <div className="flex-1 text-sm">
                           <p className="text-text truncate">{item.product.name}</p>
                           <p className="text-xs text-text-muted">x{item.quantity} @ GH₵{item.price.toFixed(2)}</p>

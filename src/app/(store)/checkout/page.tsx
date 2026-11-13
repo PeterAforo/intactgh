@@ -164,7 +164,6 @@ export default function CheckoutPage() {
         }
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [shipping, setShipping] = useState({

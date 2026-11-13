@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, Search, Edit, Trash2, Eye,
   Download, Upload, CheckSquare, X, ChevronLeft, ChevronRight,
-  AlertTriangle, RefreshCw, Copy, Check, ChevronDown, ChevronUp, Package,
+  RefreshCw, Copy, Check, ChevronDown, ChevronUp, Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -239,7 +239,7 @@ export default function AdminProductsPage() {
           images: [],
         };
         const res = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        res.ok ? created++ : failed++;
+        if (res.ok) created++; else failed++;
       }
       const msg = [`Imported ${created}`];
       if (failed) msg.push(`${failed} failed`);
@@ -372,7 +372,7 @@ export default function AdminProductsPage() {
                   className={`hover:bg-surface/50 transition-colors ${selected.has(product.id) ? "bg-accent/5" : ""}`}>
                   <td className="px-5 py-4">
                     <input type="checkbox" checked={selected.has(product.id)}
-                      onChange={(e) => setSelected((s) => { const n = new Set(s); e.target.checked ? n.add(product.id) : n.delete(product.id); return n; })}
+                      onChange={(e) => setSelected((s) => { const n = new Set(s); if (e.target.checked) n.add(product.id); else n.delete(product.id); return n; })}
                       className="rounded border-border cursor-pointer" />
                   </td>
                   <td className="px-5 py-4">

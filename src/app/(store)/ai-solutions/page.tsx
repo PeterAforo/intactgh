@@ -53,8 +53,16 @@ const aiFeatures = [
   },
 ];
 
+type AiProduct = {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  images: { url: string }[];
+};
+
 export default function AISolutionsPage() {
-  const [aiProducts, setAiProducts] = React.useState<any[]>([]);
+  const [aiProducts, setAiProducts] = React.useState<AiProduct[]>([]);
 
   React.useEffect(() => {
     fetch("/api/products?featured=true&limit=4").then(r => r.json()).then(d => {

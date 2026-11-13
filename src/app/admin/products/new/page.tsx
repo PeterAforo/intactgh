@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Upload, Camera, Sparkles, X, Plus, Save,
-  Wand2, Tag, RefreshCw, TrendingUp, TrendingDown,
+  Wand2, Tag, TrendingUp, TrendingDown,
   Video, Crop, Maximize2, ScanLine, Layers, Zap, ChevronDown, ChevronUp,
   AlertCircle, CheckCircle2,
 } from "lucide-react";
@@ -94,7 +94,6 @@ export default function NewProductPage() {
   const [costPrice, setCostPrice] = useState("");
   const [price, setPrice] = useState("");
   const [comparePrice, setComparePrice] = useState("");
-  const [sku, setSku] = useState("");
   const [stock, setStock] = useState("");
   const [status, setStatus] = useState("active");
 
@@ -161,7 +160,7 @@ export default function NewProductPage() {
         .map((v) => ({ name: v.name.trim(), options: v.options.filter((o) => o.value.trim()) }));
       const body = {
         name, slug: finalSlug, description, price, comparePrice, costPrice,
-        sku, stock, categoryId, brandId, featured, isNew, onSale,
+        stock, categoryId, brandId, featured, isNew, onSale,
         tags, images: imgList, specs: specsToJson(),
         videoUrl: videoUrl || null, status,
         variants: cleanVariants,

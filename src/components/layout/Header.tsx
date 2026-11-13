@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,7 +47,6 @@ import {
   FolderTree,
   LayoutDashboard,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/store/cart-store";
@@ -70,13 +69,15 @@ function CatIcon({ name, className = "w-5 h-5" }: { name?: string | null; classN
   return <Icon className={className} />;
 }
 
+const noopSubscribe = () => () => {};
+
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const [categories, setCategories] = useState<Cat[]>([]);
   const [authUser, setAuthUser] = useState<{ name?: string; email?: string; role?: string } | null>(null);
   const [hoveredCat, setHoveredCat] = useState<Cat | null>(null);
@@ -92,7 +93,6 @@ export default function Header() {
   const router = useRouter();
 
   useEffect(() => {
-    setMounted(true);
     fetch("/api/categories").then(r => r.json()).then(d => {
       if (d.categories) setCategories(d.categories);
     }).catch(() => {});

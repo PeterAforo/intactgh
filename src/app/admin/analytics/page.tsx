@@ -12,7 +12,6 @@ import {
   Smartphone,
   Tablet,
   ArrowUpRight,
-  ArrowDownRight,
   RefreshCw,
   Clock,
   TrendingUp,

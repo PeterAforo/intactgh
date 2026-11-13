@@ -6,7 +6,6 @@ import { Toaster } from "react-hot-toast";
 import CartPopupProvider from "@/components/cart/CartPopupProvider";
 import AnalyticsTracker from "@/components/analytics/AnalyticsTracker";
 import CookieConsent from "@/components/analytics/CookieConsent";
-import { OrganizationJsonLd, WebSiteJsonLd, LocalBusinessJsonLd } from "@/components/seo/JsonLd";
 import "./globals.css";
 
 export const viewport: Viewport = {

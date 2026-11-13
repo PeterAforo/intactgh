@@ -50,8 +50,8 @@ export default function DebugPage() {
       } else {
         setCreateResult(`❌ ${d.error}`);
       }
-    } catch (e: any) {
-      setCreateResult(`❌ ${e.message}`);
+    } catch (e) {
+      setCreateResult(`❌ ${e instanceof Error ? e.message : "Unknown error"}`);
     } finally {
       setCreating(false);
     }
@@ -72,8 +72,8 @@ export default function DebugPage() {
       } else {
         setTestResult(`❌ ${d.reason || d.error}`);
       }
-    } catch (e: any) {
-      setTestResult(`❌ ${e.message}`);
+    } catch (e) {
+      setTestResult(`❌ ${e instanceof Error ? e.message : "Unknown error"}`);
     } finally {
       setTesting(false);
     }

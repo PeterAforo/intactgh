@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -56,14 +56,19 @@ interface CategoryGridProps {
 
 export default function CategoryGrid({ categories: propCategories }: CategoryGridProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [featured, setFeatured] = useState<Cat[]>([]);
+  const [fetchedCategories, setFetchedCategories] = useState<Cat[]>([]);
 
   useEffect(() => {
-    if (propCategories?.length) { setFeatured(propCategories.filter((c: Cat) => c.featured)); return; }
+    if (propCategories?.length) return;
     fetch("/api/categories").then(r => r.json()).then(d => {
-      if (d.categories) setFeatured(d.categories.filter((c: Cat) => c.featured));
+      if (d.categories) setFetchedCategories(d.categories);
     }).catch(() => {});
   }, [propCategories]);
+
+  const featured = useMemo(
+    () => (propCategories?.length ? propCategories : fetchedCategories).filter((c: Cat) => c.featured),
+    [propCategories, fetchedCategories]
+  );
 
   useEffect(() => {
     if (sectionRef.current && featured.length) {

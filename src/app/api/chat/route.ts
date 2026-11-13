@@ -135,9 +135,8 @@ async function searchProducts(
 
   for (const term of catTerms) {
     if (term.length < 3) continue;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const candidates = await prisma.category.findMany({
-      where: { name: { contains: term, mode: "insensitive" as any } },
+      where: { name: { contains: term, mode: "insensitive" } },
       select: { id: true, name: true, children: { select: { id: true } } },
       take: 20,
     }) as { id: string; name: string; children: { id: string }[] }[];
@@ -166,9 +165,8 @@ async function searchProducts(
   const brandTerms = brandHint ? [brandHint, ...words] : words;
   for (const w of brandTerms) {
     if (w.length < 2) continue;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const brand = await prisma.brand.findFirst({
-      where: { name: { contains: w, mode: "insensitive" as any } },
+      where: { name: { contains: w, mode: "insensitive" } },
       select: { id: true },
     });
     if (brand) { brandId = brand.id; break; }

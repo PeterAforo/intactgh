@@ -171,7 +171,6 @@ function ProductCards({
 
 function AccessoryShelf({
   accessories,
-  onAddToCart,
 }: {
   accessories: AccessoryGroup;
   onAddToCart?: (product: ProductDetail) => void;
