@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   Search, Handshake, CheckCircle, XCircle, Clock, Eye, Edit, ExternalLink,
   ShoppingCart, Users, Wallet, KeyRound, Upload, Link2, Loader2, X,
-  Ban, Trash2, UserCheck, RotateCcw, Send,
+  Ban, Trash2, UserCheck, RotateCcw, Send, BadgeCheck,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import toast from "react-hot-toast";
@@ -202,6 +202,7 @@ export default function ResellersPage() {
   const [saving, setSaving] = useState(false);
   const [resettingLogin, setResettingLogin] = useState(false);
   const [settingPassword, setSettingPassword] = useState(false);
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -410,6 +411,27 @@ export default function ResellersPage() {
       toast.error(error instanceof Error ? error.message : "Failed to set password");
     } finally {
       setSettingPassword(false);
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (!selectedReseller) return;
+    const email = selectedReseller.user.email;
+    if (!confirm(`Mark ${email} as verified without sending a verification link?`)) return;
+
+    setVerifyingEmail(true);
+    try {
+      const res = await fetch(`/api/admin/resellers/${selectedReseller.id}/verify-email`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to verify email");
+      const updated = { ...data, activityCount: selectedReseller.activityCount };
+      setResellers((prev) => prev.map((r) => (r.id === selectedReseller.id ? updated : r)));
+      setSelectedReseller(updated);
+      toast.success(data.alreadyVerified ? "Email was already verified" : "Email marked as verified");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to verify email");
+    } finally {
+      setVerifyingEmail(false);
     }
   };
 
@@ -632,7 +654,7 @@ export default function ResellersPage() {
 
       {selectedReseller && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => !saving && !resettingLogin && !settingPassword && !deleting && setSelectedReseller(null)} />
+          <div className="fixed inset-0 bg-black/50 z-50" onClick={() => !saving && !resettingLogin && !settingPassword && !deleting && !verifyingEmail && setSelectedReseller(null)} />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -644,7 +666,7 @@ export default function ResellersPage() {
                   <h2 className="text-lg font-bold text-text">{editing ? "Edit Reseller" : "Reseller Details"}</h2>
                   <p className="text-sm text-text-muted">{selectedReseller.storeName} · /{selectedReseller.storeSlug}</p>
                 </div>
-                <button onClick={() => setSelectedReseller(null)} disabled={saving || resettingLogin || settingPassword || deleting} className="text-text-muted hover:text-text text-xl disabled:opacity-50">&times;</button>
+                <button onClick={() => setSelectedReseller(null)} disabled={saving || resettingLogin || settingPassword || deleting || verifyingEmail} className="text-text-muted hover:text-text text-xl disabled:opacity-50">&times;</button>
               </div>
 
               {editing ? (
@@ -798,6 +820,16 @@ export default function ResellersPage() {
                         <span className={`text-xs font-medium px-2 py-1 rounded-full ${isLocked(selectedReseller.user) ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
                           {isLocked(selectedReseller.user) ? "Locked" : "Not locked"}
                         </span>
+                        {!selectedReseller.user.emailVerified && (
+                          <button
+                            onClick={handleVerifyEmail}
+                            disabled={verifyingEmail}
+                            className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                          >
+                            {verifyingEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <BadgeCheck className="w-3 h-3" />}
+                            Verify Email
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-3 text-sm">
