@@ -87,20 +87,20 @@ export default function CartAddedPopup() {
                       {product.name}
                     </h4>
                     {product.variantLabel && (
-                      <p className="text-xs text-text-muted mb-1">{product.variantLabel}</p>
+                      <p className="text-[13px] text-text-muted mb-1">{product.variantLabel}</p>
                     )}
                     <div className="flex items-center gap-2">
                       <span className="text-accent font-bold text-sm">
                         {formatPrice(product.price)}
                       </span>
-                      <span className="text-xs text-text-muted">× {quantity}</span>
+                      <span className="text-[13px] text-text-muted">× {quantity}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Cart Summary */}
                 <div className="mt-4 bg-surface rounded-xl px-4 py-3 flex items-center justify-between">
-                  <div className="text-xs text-text-muted">
+                  <div className="text-[13px] text-text-muted">
                     <ShoppingBag className="w-3.5 h-3.5 inline mr-1" />
                     {cartItemCount} {cartItemCount === 1 ? "item" : "items"} in cart
                   </div>

@@ -195,7 +195,7 @@ export default function ChatBot() {
               className="relative bg-white border border-gray-200 shadow-lg rounded-2xl rounded-br-sm px-4 py-2.5 text-sm text-gray-700 max-w-[220px] cursor-pointer"
               onClick={openChat}
             >
-              👋 Hi! Need help finding something?
+              Hi! Need help finding something?
               <span className="absolute -bottom-1.5 right-4 w-3 h-3 bg-white border-r border-b border-gray-200 rotate-45" />
             </motion.div>
           )}
@@ -212,8 +212,8 @@ export default function ChatBot() {
               className="relative bg-[#0052cc] text-white shadow-xl rounded-2xl rounded-br-sm px-4 py-3 text-sm max-w-[230px] cursor-pointer"
               onClick={openChat}
             >
-              <p className="font-semibold text-[13px]">👋 Still there?</p>
-              <p className="text-white/80 text-[12px] mt-0.5">I can help you find products, check prices or track an order!</p>
+              <p className="font-semibold text-[13px]">Still there?</p>
+              <p className="text-white/80 text-[13px] mt-0.5">I can help you find products, check prices or track an order!</p>
               <button
                 onClick={(e) => { e.stopPropagation(); setIdlePopup(false); }}
                 className="absolute top-1.5 right-2 text-white/60 hover:text-white text-base leading-none"
@@ -272,7 +272,7 @@ export default function ChatBot() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm leading-tight">{CHATBOT_CONFIG.name}</p>
-                <p className="text-xs text-white/70 flex items-center gap-1.5">
+                <p className="text-[13px] text-white/70 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-green-400 rounded-full" />
                   Online
                 </p>
@@ -367,7 +367,7 @@ export default function ChatBot() {
             </form>
 
             {/* Footer branding */}
-            <p className="text-center text-[10px] text-gray-400 pb-2 bg-white shrink-0">
+            <p className="text-center text-[13px] text-gray-400 pb-2 bg-white shrink-0">
               Powered by <span className="font-semibold text-[#0052cc]">Kwaku</span>
             </p>
           </motion.div>
