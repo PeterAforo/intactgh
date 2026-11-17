@@ -471,6 +471,9 @@ model Reseller {
   invoices           Invoice[]
   payouts            Payout[]
   promotions         ResellerPromotion[]
+  prospects          Prospect[]
+  prospectSearches   ProspectSearch[]
+  campaigns          Campaign[]
 
   @@index([status])
   @@index([storeSlug])
@@ -667,4 +670,98 @@ model ResellerPromotion {
 
   @@index([resellerId])
   @@index([active, startDate, endDate])
+}
+
+model Prospect {
+  id           String   @id @default(cuid())
+  resellerId   String
+  reseller     Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+
+  name         String
+  type         String   @default("business") // business | individual
+  category     String?
+  phone        String?
+  email        String?
+  website      String?
+  address      String?
+  area         String?
+  latitude     Float?
+  longitude    Float?
+
+  status       String   @default("new") // new|contacted|interested|negotiating|converted|lost
+  score        Int      @default(0)
+  source       String?  // osm|google|csv|manual
+  sourceId     String?
+  tags         String?  // JSON array
+  notes        String?
+
+  clientId     String?
+  optedOut     Boolean  @default(false)
+  lastContactedAt DateTime?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  activities   ProspectActivity[]
+  campaignRecipients CampaignRecipient[]
+
+  @@unique([resellerId, source, sourceId])
+  @@index([resellerId, status])
+  @@index([resellerId, area])
+}
+
+model ProspectActivity {
+  id         String   @id @default(cuid())
+  prospectId String
+  prospect   Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  type       String   // note|email_sent|whatsapp_sent|status_change|call|meeting|system
+  body       String?
+  metadata   String?
+  createdAt  DateTime @default(now())
+
+  @@index([prospectId])
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  resellerId  String
+  reseller    Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  name        String
+  channel     String   // email | whatsapp | both
+  subject     String?
+  body        String
+  productIds  String?  // JSON array
+  status      String   @default("draft") // draft|scheduled|sending|sent|paused
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+  recipients  CampaignRecipient[]
+}
+
+model CampaignRecipient {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  prospectId  String?
+  prospect    Prospect? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+  channel     String
+  destination String
+  status      String   @default("pending") // pending|sent|failed|opened|clicked|replied
+  error       String?
+  sentAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([campaignId])
+}
+
+model ProspectSearch {
+  id         String   @id @default(cuid())
+  resellerId String
+  reseller   Reseller @relation(fields: [resellerId], references: [id], onDelete: Cascade)
+  area       String
+  category   String?
+  radiusKm   Float?
+  lat        Float?
+  lng        Float?
+  results    Int      @default(0)
+  createdAt  DateTime @default(now())
 }
