@@ -44,7 +44,10 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     ? getDiscountPercentage(product.price, product.comparePrice)
     : 0;
 
+  const outOfStock = (product.stock ?? 0) <= 0;
+
   const handleAddToCart = (e: React.MouseEvent) => {
+    if (outOfStock) return;
     e.preventDefault();
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
@@ -96,6 +99,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
             {/* Badges */}
             <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+              {outOfStock && <Badge variant="warning">SOLD OUT</Badge>}
               {product.isNew && <Badge variant="new">NEW</Badge>}
               {discount > 0 && <Badge variant="default">-{discount}%</Badge>}
               {product.onSale && !discount && <Badge variant="warning">SALE</Badge>}
@@ -129,11 +133,12 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-0 sm:translate-y-full sm:group-hover:translate-y-0 transition-transform duration-300">
               <Button
                 onClick={handleAddToCart}
+                disabled={outOfStock}
                 className="w-full rounded-xl shadow-lg"
                 size="sm"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                Add to Cart
+                {outOfStock ? "Out of Stock" : "Add to Cart"}
               </Button>
             </div>
           </div>
