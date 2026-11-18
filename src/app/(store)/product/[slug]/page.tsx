@@ -19,10 +19,14 @@ import {
   ChevronRight,
   Check,
   Package,
+  Loader2,
+  X,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, getDiscountPercentage } from "@/lib/utils";
+import { imgUrl } from "@/lib/images";
 import { useCartStore, type CartProduct } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useCartPopupStore } from "@/store/cart-popup-store";
@@ -37,6 +41,10 @@ export default function ProductDetailPage() {
   const slug = params.slug as string;
   const [product, setProduct] = useState<Any>(null);
   const [relatedProducts, setRelatedProducts] = useState<Any[]>([]);
+  const [frequentlyBought, setFrequentlyBought] = useState<Any[]>([]);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [zoomIndex, setZoomIndex] = useState(0);
+  const [showStickyBar, setShowStickyBar] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
@@ -44,7 +52,8 @@ export default function ProductDetailPage() {
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [linkCopied, setLinkCopied] = useState(false);
 
-  const imageRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLButtonElement>(null);
+  const atcRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
   const openCartPopup = useCartPopupStore((s) => s.open);
   const toggleWishlist = useWishlistStore((s) => s.toggleItemDB);
@@ -55,8 +64,38 @@ export default function ProductDetailPage() {
     fetch(`/api/products/${slug}`).then(r => r.json()).then(d => {
       if (d.product) setProduct(d.product);
       if (d.relatedProducts) setRelatedProducts(d.relatedProducts);
+      if (d.frequentlyBought) setFrequentlyBought(d.frequentlyBought);
     }).catch(() => {});
   }, [slug]);
+
+  // Show the sticky mobile add-to-cart bar once the main one scrolls away
+  useEffect(() => {
+    const el = atcRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowStickyBar(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [product]);
+
+  // Lock body scroll while the zoom lightbox is open
+  useEffect(() => {
+    document.body.style.overflow = zoomOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [zoomOpen]);
+
+  useEffect(() => {
+    if (!zoomOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoomOpen(false);
+      if (e.key === "ArrowRight") setZoomIndex((i) => (i + 1) % (product?.images?.length || 1));
+      if (e.key === "ArrowLeft") setZoomIndex((i) => (i - 1 + (product?.images?.length || 1)) % (product?.images?.length || 1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoomOpen, product]);
 
   useEffect(() => {
     if (imageRef.current) {
@@ -98,8 +137,11 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="animate-pulse text-text-muted">Loading product...</div>
+      <div className="min-h-dvh bg-surface flex items-center justify-center">
+        <div className="flex items-center gap-3 text-text-muted">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Loading product…
+        </div>
       </div>
     );
   }
@@ -132,9 +174,9 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-dvh bg-white ${showStickyBar ? "pb-20 lg:pb-0" : ""}`}>
       {/* Breadcrumb */}
-      <div className="bg-surface border-b border-border">
+      <div className="bg-surface">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center gap-2 text-sm text-text-muted">
             <Link href="/" className="hover:text-accent">Home</Link>
@@ -159,28 +201,34 @@ export default function ProductDetailPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <div ref={imageRef} className="relative aspect-square bg-surface rounded-2xl overflow-hidden mb-4">
+            <button
+              ref={imageRef}
+              onClick={() => { setZoomIndex(selectedImage); setZoomOpen(true); }}
+              className="relative block aspect-square w-full cursor-zoom-in bg-surface rounded-2xl overflow-hidden mb-4"
+              aria-label="Zoom product image"
+            >
               {product.images[selectedImage]?.url ? (
                 <Image
-                  src={product.images[selectedImage].url}
+                  src={imgUrl(product.images[selectedImage].url, 1200)}
                   alt={product.name}
                   fill
                   className="object-cover"
                   priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                   <Package className="w-16 h-16 text-border" />
-                  <span className="text-xs text-text-muted uppercase tracking-wider">No Image</span>
+                  <span className="text-xs text-text-muted">No image</span>
                 </div>
               )}
               {discount > 0 && (
-                <Badge className="absolute top-4 left-4 text-sm">-{discount}%</Badge>
+                <Badge className="absolute top-4 left-4 text-sm pointer-events-none">-{discount}%</Badge>
               )}
               {product.isNew && (
-                <Badge variant="new" className="absolute top-4 right-4 text-sm">NEW</Badge>
+                <Badge variant="new" className="absolute top-4 right-4 text-sm pointer-events-none">NEW</Badge>
               )}
-            </div>
+            </button>
 
             {product.images.length > 1 && (
               <div className="flex gap-3">
@@ -192,7 +240,7 @@ export default function ProductDetailPage() {
                       selectedImage === i ? "border-accent" : "border-border hover:border-accent/50"
                     }`}
                   >
-                    <Image src={img.url} alt={img.alt || ""} fill className="object-cover" />
+                    <Image src={imgUrl(img.url, 200)} alt={img.alt || ""} fill className="object-cover" />
                   </button>
                 ))}
               </div>
@@ -292,9 +340,9 @@ export default function ProductDetailPage() {
                           <button
                             key={opt.value}
                             onClick={() => setSelectedVariants((prev) => ({ ...prev, [variant.name]: prev[variant.name] === opt.value ? "" : opt.value }))}
-                            className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all ${
+                            className={`px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
                               selected === opt.value
-                                ? "bg-accent text-white border-accent shadow-sm"
+                                ? "bg-accent text-white border-accent"
                                 : "bg-white border-border text-text hover:border-accent/60 hover:bg-surface"
                             }`}
                           >
@@ -314,20 +362,22 @@ export default function ProductDetailPage() {
             )}
 
             {/* Quantity & Add to Cart */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
-              <div className="flex items-center border border-border rounded-xl overflow-hidden">
+            <div ref={atcRef} className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
+              <div className="flex items-center bg-surface rounded-xl">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-3 py-3 hover:bg-surface transition-colors"
+                  className="px-3 py-3 hover:bg-black/5 rounded-l-xl transition-colors"
+                  aria-label="Decrease quantity"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="px-5 py-3 font-semibold text-center min-w-[50px] border-x border-border">
+                <span className="px-5 py-3 font-semibold text-center min-w-[50px] bg-white">
                   {quantity}
                 </span>
                 <button
                   onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                  className="px-3 py-3 hover:bg-surface transition-colors"
+                  className="px-3 py-3 hover:bg-black/5 rounded-r-xl transition-colors"
+                  aria-label="Increase quantity"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -354,10 +404,10 @@ export default function ProductDetailPage() {
 
               <button
                 onClick={() => toggleWishlist(product.id)}
-                className={`w-14 h-14 rounded-xl border-2 flex items-center justify-center transition-all ${
+                className={`w-14 h-14 rounded-xl bg-surface flex items-center justify-center transition-colors ${
                   isInWishlist
-                    ? "border-accent bg-accent text-white"
-                    : "border-border hover:border-accent hover:text-accent"
+                    ? "bg-accent text-white"
+                    : "text-text hover:bg-accent hover:text-white"
                 }`}
               >
                 <Heart className={`w-5 h-5 ${isInWishlist ? "fill-current" : ""}`} />
@@ -380,7 +430,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Share */}
-            <div className="flex items-center gap-3 pt-4 border-t border-border">
+            <div className="flex items-center gap-3 pt-4">
               <Share2 className="w-4 h-4 text-text-muted" />
               <span className="text-sm text-text-muted">Share:</span>
               <button
@@ -410,7 +460,7 @@ export default function ProductDetailPage() {
                   setLinkCopied(true);
                   setTimeout(() => setLinkCopied(false), 2000);
                 }}
-                className={`h-8 px-3 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+                className={`h-8 px-3 rounded-full flex items-center justify-center text-xs font-bold transition-colors cursor-pointer ${
                   linkCopied ? "bg-green-600 text-white" : "bg-gray-600 text-white hover:opacity-80"
                 }`}
                 aria-label="Copy link"
@@ -423,7 +473,7 @@ export default function ProductDetailPage() {
 
         {/* Tabs */}
         <div className="mt-14">
-          <div className="flex items-center gap-1 border-b border-border mb-8">
+          <div className="flex items-center gap-1 mb-8">
             {[
               { id: "description", label: "Description" },
               { id: "specs", label: "Specifications" },
@@ -469,7 +519,7 @@ export default function ProductDetailPage() {
                   ["Condition", "Brand New"],
                   ["Warranty", "Manufacturer Warranty"],
                 ].map(([key, value]) => (
-                  <div key={key} className="flex items-center py-3 border-b border-border/50">
+                  <div key={key} className="flex items-center py-3">
                     <span className="w-40 text-sm font-medium text-text">{key}</span>
                     <span className="text-sm text-text-light">{value}</span>
                   </div>
@@ -486,6 +536,21 @@ export default function ProductDetailPage() {
           </motion.div>
         </div>
 
+        {/* Frequently bought together — real order co-occurrence */}
+        {frequentlyBought.length > 0 && (
+          <div className="mt-14">
+            <h2 className="text-2xl font-bold text-text mb-2">Frequently bought together</h2>
+            <p className="text-sm text-text-muted mb-6">
+              Customers who bought this also picked up these.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {frequentlyBought.map((p, i) => (
+                <ProductCard key={p.id} product={p} index={i} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <div className="mt-16">
@@ -498,6 +563,77 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Image zoom lightbox */}
+      {zoomOpen && product.images[zoomIndex]?.url && (
+        <div
+          className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setZoomOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product image viewer"
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/25 rounded-full p-2"
+            onClick={() => setZoomOpen(false)}
+            aria-label="Close"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          {product.images.length > 1 && (
+            <>
+              <button
+                className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center"
+                onClick={(e) => { e.stopPropagation(); setZoomIndex((i) => (i - 1 + product.images.length) % product.images.length); }}
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center"
+                onClick={(e) => { e.stopPropagation(); setZoomIndex((i) => (i + 1) % product.images.length); }}
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+          <Image
+            src={imgUrl(product.images[zoomIndex].url, 1600)}
+            alt={product.images[zoomIndex].alt || product.name}
+            width={1200}
+            height={1200}
+            className="max-h-[85vh] max-w-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {product.images.length > 1 && (
+            <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/60 text-sm">
+              {zoomIndex + 1} / {product.images.length}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Sticky mobile add-to-cart */}
+      {showStickyBar && (
+        <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white shadow-[0_-12px_32px_rgba(17,17,17,0.14)] px-4 py-3 flex items-center gap-3">{/* taste-skill-ignore: sticky bar is a real overlay */}
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-bold text-accent truncate">{formatPrice(displayPrice)}</p>
+            {product.stock === 0 && (
+              <p className="text-xs text-accent">Out of stock</p>
+            )}
+          </div>
+          <Button
+            size="lg"
+            onClick={handleAddToCart}
+            disabled={product.stock === 0}
+            className="flex-1 rounded-xl"
+          >
+            <ShoppingCart className="w-5 h-5 mr-2" />
+            {addedToCart ? "Added!" : "Add to Cart"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

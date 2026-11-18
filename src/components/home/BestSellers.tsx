@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useCartPopupStore } from "@/store/cart-popup-store";
 import Reveal from "@/components/home/Reveal";
+import { imgUrl } from "@/lib/images";
 import toast from "react-hot-toast";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,7 +94,7 @@ export default function BestSellers({ products }: BestSellersProps) {
                 {items.map((p: Any, i: number) => (
                   <Image
                     key={p.id}
-                    src={p.images[0].url}
+                    src={imgUrl(p.images[0].url, 1000)}
                     alt={p.name}
                     fill
                     sizes="(max-width: 1024px) 100vw, 40vw"

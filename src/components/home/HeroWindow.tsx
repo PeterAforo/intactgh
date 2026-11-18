@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { imgUrl } from "@/lib/images";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -110,7 +111,7 @@ export default function HeroWindow({ picks, fallbackSlides }: HeroWindowProps) {
           {items.map((item, i) => (
             <Image
               key={item.key}
-              src={item.image}
+              src={imgUrl(item.image, 1600)}
               alt={item.name}
               fill
               priority={i === 0}

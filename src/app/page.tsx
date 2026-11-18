@@ -1,6 +1,6 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import ChatBot from "@/components/chat/ChatBot";
+import ChatBotLazy from "@/components/chat/ChatBotLazy";
 import HeroWindow from "@/components/home/HeroWindow";
 import TrustBar from "@/components/home/TrustBar";
 import Departments from "@/components/home/Departments";
@@ -31,7 +31,7 @@ export default async function HomePage() {
         <ClosingCTA product={closingProduct} />
       </main>
       <Footer />
-      <ChatBot />
+      <ChatBotLazy />
     </>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Reveal from "@/components/home/Reveal";
+import { imgUrl } from "@/lib/images";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -69,7 +70,7 @@ export default function Departments({ picks }: DepartmentsProps) {
                 {items.map((item: Any, i: number) => (
                   <Image
                     key={item.id}
-                    src={item.product.images[0].url}
+                    src={imgUrl(item.product.images[0].url, 800)}
                     alt={item.product.name}
                     width={640}
                     height={640}
