@@ -61,7 +61,7 @@ export default function PromoProducts({ promos }: { promos: Any[] }) {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-accent rounded-2xl p-5 md:p-6 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+              className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 rounded-2xl p-5 md:p-6 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
             >
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-2.5 rounded-xl">
@@ -76,12 +76,12 @@ export default function PromoProducts({ promos }: { promos: Any[] }) {
               </div>
               <div className="flex items-center gap-4">
                 {discountPct > 0 && (
-                  <div className="bg-white/15 px-4 py-2 rounded-xl">
+                  <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
                     <span className="text-2xl font-black text-white">{discountPct}%</span>
                     <span className="text-white/80 text-xs ml-1">OFF</span>
                   </div>
                 )}
-                <div className="bg-black/20 px-4 py-2 rounded-xl">
+                <div className="bg-black/20 backdrop-blur-sm px-4 py-2 rounded-xl">
                   <p className="text-[10px] text-white/60 uppercase tracking-wider">Ends in</p>
                   <Countdown endDate={promo.endDate} />
                 </div>
@@ -119,7 +119,7 @@ export default function PromoProducts({ promos }: { promos: Any[] }) {
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.05 }}
                   >
-                    <Link href={`/product/${product.slug}`} className="group block bg-white rounded-xl border border-border hover:border-accent/40 transition-colors overflow-hidden">
+                    <Link href={`/product/${product.slug}`} className="group block bg-white rounded-xl border border-border hover:shadow-lg transition-all overflow-hidden">
                       {/* Image */}
                       <div className="relative aspect-square bg-surface overflow-hidden">
                         {imageUrl ? (

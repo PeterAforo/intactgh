@@ -56,7 +56,6 @@ const footerLinks = {
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
-  const [subscribing, setSubscribing] = useState(false);
   const [sitePhone, setSitePhone] = useState("+233 543 645 126");
 
   useEffect(() => {
@@ -65,30 +64,19 @@ export default function Footer() {
     }).catch(() => {});
   }, []);
 
-  const handleSubscribe = async (e: React.FormEvent) => {
+  const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || subscribing) return;
-    setSubscribing(true);
-    try {
-      const res = await fetch("/api/newsletter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        setSubscribed(true);
-        setEmail("");
-        setTimeout(() => setSubscribed(false), 3000);
-      }
-    } finally {
-      setSubscribing(false);
+    if (email) {
+      setSubscribed(true);
+      setEmail("");
+      setTimeout(() => setSubscribed(false), 3000);
     }
   };
 
   return (
     <footer className="bg-primary text-white mt-auto">
       {/* Features Bar */}
-      <div>
+      <div className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {featureBadges.map((feature, i) => (
@@ -104,8 +92,8 @@ export default function Footer() {
                   <feature.icon className="w-6 h-6 text-accent" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base">{feature.title}</p>
-                  <p className="text-[13px] text-white/60">{feature.desc}</p>
+                  <p className="font-semibold text-sm">{feature.title}</p>
+                  <p className="text-xs text-white/60">{feature.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -114,12 +102,12 @@ export default function Footer() {
       </div>
 
       {/* Newsletter */}
-      <div className="bg-white/[0.04]">
+      <div className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <h3 className="text-xl font-bold mb-1">Subscribe To Our Newsletter</h3>
-              <p className="text-white/60 text-base">Get the latest deals, promotions, and tech news delivered to your inbox.</p>
+              <p className="text-white/60 text-sm">Get the latest deals, promotions, and tech news delivered to your inbox.</p>
             </div>
             <form onSubmit={handleSubscribe} className="flex w-full md:w-auto gap-2">
               <Input
@@ -130,8 +118,8 @@ export default function Footer() {
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/40 w-full md:w-80 rounded-full"
                 required
               />
-              <Button type="submit" className="rounded-full px-6 shrink-0" disabled={subscribing}>
-                {subscribed ? "Subscribed!" : subscribing ? "Joining…" : "Subscribe"}
+              <Button type="submit" className="rounded-full px-6 shrink-0">
+                {subscribed ? "Subscribed!" : "Subscribe"}
                 <Send className="w-4 h-4 ml-2" />
               </Button>
             </form>
@@ -145,21 +133,21 @@ export default function Footer() {
           {/* About */}
           <div className="lg:col-span-2">
             <Image src="/logo-white.png" alt="Intact Ghana" width={160} height={50} className="h-10 w-auto mb-4 brightness-0 invert" />
-            <p className="text-white/60 text-base leading-relaxed mb-6">
+            <p className="text-white/60 text-sm leading-relaxed mb-6">
               Intact Ghana is your premier destination for electronics, smartphones, laptops, and home appliances. 
               Racing with technology since 2014, we bring you the best products at competitive prices with 
               exceptional customer service across Ghana.
             </p>
             <div className="space-y-3">
-              <a href={`tel:${sitePhone.replace(/\s/g, "")}`} className="flex items-center gap-3 text-base text-white/70 hover:text-gold transition-colors">
+              <a href={`tel:${sitePhone.replace(/\s/g, "")}`} className="flex items-center gap-3 text-sm text-white/70 hover:text-gold transition-colors">
                 <Phone className="w-4 h-4 text-accent" />
                 {sitePhone}
               </a>
-              <a href="mailto:sales@intactghana.com" className="flex items-center gap-3 text-base text-white/70 hover:text-gold transition-colors">
+              <a href="mailto:sales@intactghana.com" className="flex items-center gap-3 text-sm text-white/70 hover:text-gold transition-colors">
                 <Mail className="w-4 h-4 text-accent" />
                 sales@intactghana.com
               </a>
-              <div className="flex items-start gap-3 text-base text-white/70">
+              <div className="flex items-start gap-3 text-sm text-white/70">
                 <MapPin className="w-4 h-4 text-accent shrink-0 mt-0.5" />
                 East Legon, A&C Mall, Greater Accra, Ghana - West Africa
               </div>
@@ -177,7 +165,7 @@ export default function Footer() {
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent transition-colors text-base font-bold"
+                  className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent transition-colors text-xs font-bold"
                   aria-label={social.name}
                 >
                   {social.letter}
@@ -189,7 +177,7 @@ export default function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="font-bold text-base mb-5">
+              <h4 className="font-bold text-sm uppercase tracking-wider mb-5">
                 {title === "company" ? "Company" : title === "support" ? "Customer Service" : "Categories"}
               </h4>
               <ul className="space-y-3">
@@ -197,7 +185,7 @@ export default function Footer() {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-base text-white/60 hover:text-gold transition-colors flex items-center gap-1 group"
+                      className="text-sm text-white/60 hover:text-gold transition-colors flex items-center gap-1 group"
                     >
                       <ArrowRight className="w-3 h-3 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
                       {link.label}
@@ -211,9 +199,9 @@ export default function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="bg-white/[0.04]">
+      <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-[13px] text-white/60">
+          <p className="text-xs text-white/40">
             &copy; {new Date().getFullYear()} Intact Ghana. All rights reserved. Racing with Technology.
             <span className="mx-1">|</span>
             Developed by{" "}
@@ -221,7 +209,7 @@ export default function Footer() {
               McAforo
             </a>
           </p>
-          <div className="flex items-center gap-4 text-[13px] text-white/60">
+          <div className="flex items-center gap-4 text-xs text-white/40">
             <span>We accept:</span>
             <div className="flex items-center gap-2">
               {["Visa", "Mastercard", "Mobile Money", "Cash"].map((method) => (

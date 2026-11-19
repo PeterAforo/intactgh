@@ -152,7 +152,7 @@ export default function Header() {
   return (
     <header className="w-full z-50 relative">
       {/* Top Bar */}
-      <div className="bg-primary text-white text-base">
+      <div className="bg-primary text-white text-sm">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-10">
           <div className="hidden md:flex items-center gap-4">
             <a href="mailto:info@intactghana.com" className="flex items-center gap-1 hover:text-white/80 transition-colors">
@@ -184,7 +184,7 @@ export default function Header() {
       </div>
 
       {/* Main Header */}
-      <div className={`bg-white transition-all duration-300 ${isScrolled ? "shadow-lg sticky top-0 z-50" : ""}`}>
+      <div className={`bg-white transition-all duration-300 ${isScrolled ? "shadow-lg sticky top-0 z-50" : "shadow-sm"}`}>
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 md:h-20">
           {/* Mobile Menu Toggle */}
           <button
@@ -236,11 +236,11 @@ export default function Header() {
                   {/* Brands */}
                   {instant.brands.length > 0 && (
                     <div className="p-3 border-b border-border/50">
-                      <p className="text-[13px] font-semibold text-text-muted px-2 mb-2">Brands</p>
+                      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider px-2 mb-2">Brands</p>
                       <div className="flex flex-wrap gap-2">
                         {instant.brands.map((b: Cat) => (
                           <button key={b.id} onClick={() => goToResult(`/shop?brand=${b.slug}`)}
-                            className="px-3 py-1.5 bg-surface hover:bg-accent/10 hover:text-accent border border-border rounded-full text-base font-medium transition-colors">
+                            className="px-3 py-1.5 bg-surface hover:bg-accent/10 hover:text-accent border border-border rounded-full text-sm font-medium transition-colors">
                             {b.name}
                           </button>
                         ))}
@@ -251,11 +251,11 @@ export default function Header() {
                   {/* Categories */}
                   {instant.categories.length > 0 && (
                     <div className="p-3 border-b border-border/50">
-                      <p className="text-[13px] font-semibold text-text-muted px-2 mb-2">Categories</p>
+                      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider px-2 mb-2">Categories</p>
                       <div className="flex flex-wrap gap-2">
                         {instant.categories.map((c: Cat) => (
                           <button key={c.id} onClick={() => goToResult(`/shop/${c.slug}`)}
-                            className="px-3 py-1.5 bg-surface hover:bg-accent/10 hover:text-accent border border-border rounded-full text-base font-medium transition-colors">
+                            className="px-3 py-1.5 bg-surface hover:bg-accent/10 hover:text-accent border border-border rounded-full text-sm font-medium transition-colors">
                             {c.name}
                           </button>
                         ))}
@@ -266,7 +266,7 @@ export default function Header() {
                   {/* Products */}
                   {instant.products.length > 0 && (
                     <div className="p-2">
-                      <p className="text-[13px] font-semibold text-text-muted px-2 mb-2">Products</p>
+                      <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wider px-2 mb-2">Products</p>
                       {instant.products.map((p: Cat) => (
                         <button key={p.id} onClick={() => goToResult(`/product/${p.slug}`)}
                           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-surface transition-colors text-left">
@@ -276,8 +276,8 @@ export default function Header() {
                               : <div className="w-full h-full flex items-center justify-center"><Package className="w-4 h-4 text-border" /></div>}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-base font-medium text-text truncate">{p.name}</p>
-                            <p className="text-[13px] text-text-muted">{p.brand?.name} &middot; GH&#8373;{p.price?.toFixed(2)}</p>
+                            <p className="text-sm font-medium text-text truncate">{p.name}</p>
+                            <p className="text-xs text-text-muted">{p.brand?.name} &middot; GH&#8373;{p.price?.toFixed(2)}</p>
                           </div>
                         </button>
                       ))}
@@ -287,7 +287,7 @@ export default function Header() {
                   {/* View all */}
                   <div className="border-t border-border/50 p-3">
                     <button onClick={() => goToResult(`/search?q=${encodeURIComponent(searchQuery.trim())}`)}
-                      className="w-full flex items-center justify-center gap-2 py-2 text-base font-semibold text-accent hover:bg-accent/5 rounded-xl transition-colors">
+                      className="w-full flex items-center justify-center gap-2 py-2 text-sm font-semibold text-accent hover:bg-accent/5 rounded-xl transition-colors">
                       <Search className="w-4 h-4" />
                       See all results for &quot;{searchQuery}&quot;
                     </button>
@@ -313,7 +313,7 @@ export default function Header() {
             >
               <Heart className="w-5 h-5" />
               {mounted && wishlistItems.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 bg-accent text-white text-[13px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 bg-accent text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                   {wishlistItems.length}
                 </span>
               )}
@@ -322,7 +322,7 @@ export default function Header() {
             {mounted && authUser && (authUser.role === "admin" || authUser.role === "staff") && (
               <Link
                 href="/admin"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[13px] font-medium rounded-full hover:bg-primary-light transition-colors"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-full hover:bg-primary-light transition-colors"
               >
                 <LayoutDashboard className="w-3.5 h-3.5" />
                 <span className="hidden md:inline">Admin</span>
@@ -335,7 +335,7 @@ export default function Header() {
             >
               <User className="w-5 h-5 shrink-0" />
               {mounted && authUser && (
-                <span className="text-base font-medium text-text hidden md:block max-w-[130px] truncate">
+                <span className="text-sm font-medium text-text hidden md:block max-w-[130px] truncate">
                   Welcome! {authUser.name?.split(" ")[0] || authUser.email?.split("@")[0]}
                 </span>
               )}
@@ -348,11 +348,11 @@ export default function Header() {
               }`}
             >
               <ShoppingCart className="w-5 h-5" />
-              <span className="hidden md:inline text-base font-medium">
+              <span className="hidden md:inline text-sm font-medium">
                 {formatPrice(mounted ? cartTotal : 0)}
               </span>
               {mounted && cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gold text-white text-[13px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-gold text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
                   {cartItemCount}
                 </span>
               )}
@@ -428,11 +428,11 @@ export default function Header() {
                           }`}
                         >
                           <span className="text-accent"><CatIcon name={cat.icon} /></span>
-                          <span className="font-medium text-base flex-1">{cat.name}</span>
+                          <span className="font-medium text-sm flex-1">{cat.name}</span>
                           {cat.children?.length > 0 ? (
                             <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
                           ) : (
-                            <Badge variant="outline" className="text-[13px]">{cat.productCount}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{cat.productCount}</Badge>
                           )}
                         </Link>
                       </div>
@@ -446,12 +446,12 @@ export default function Header() {
                       animate={{ opacity: 1, x: 0 }}
                       className="w-[220px] border-l border-border bg-surface/60 rounded-br-xl py-2"
                     >
-                      <p className="px-4 pb-2 pt-1 text-[13px] font-semibold text-text-muted">
+                      <p className="px-4 pb-2 pt-1 text-[10px] font-semibold text-text-muted uppercase tracking-wider">
                         {hoveredCat.name}
                       </p>
                       <Link
                         href={`/shop/${hoveredCat.slug}`}
-                        className="flex items-center gap-2 px-4 py-2 text-base hover:bg-white hover:text-accent transition-colors font-medium"
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-white hover:text-accent transition-colors font-medium"
                       >
                         All {hoveredCat.name}
                       </Link>
@@ -459,7 +459,7 @@ export default function Header() {
                         <Link
                           key={sub.id}
                           href={`/shop/${sub.slug}`}
-                          className="flex items-center gap-2 px-4 py-2 text-base hover:bg-white hover:text-accent transition-colors"
+                          className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-white hover:text-accent transition-colors"
                         >
                           <span className="w-1 h-1 rounded-full bg-accent/50 shrink-0" />
                           {sub.name}
@@ -485,7 +485,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="px-4 py-2 text-base font-medium hover:text-white/80 transition-colors rounded-lg hover:bg-white/10"
+                className="px-4 py-2 text-sm font-medium hover:text-white/80 transition-colors rounded-lg hover:bg-white/10"
               >
                 {link.label}
               </Link>
@@ -493,7 +493,7 @@ export default function Header() {
           </div>
 
           {/* Promo text */}
-          <div className="ml-auto text-[13px] text-white font-bold animate-pulse">
+          <div className="ml-auto text-xs text-white font-bold animate-pulse">
             Fast Nationwide Delivery — Shop Now!
           </div>
         </div>
@@ -547,7 +547,7 @@ export default function Header() {
               </div>
 
               <div className="p-4 border-t border-border">
-                <p className="text-base font-semibold text-text-light mb-3">Categories</p>
+                <p className="text-sm font-semibold text-text-light mb-3">Categories</p>
                 <div className="space-y-1">
                   {categories.filter((c: Cat) => !c.parentId).map((cat: Cat) => (
                     <div key={cat.id}>
@@ -557,7 +557,7 @@ export default function Header() {
                         className="flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-surface transition-colors"
                       >
                         <span className="text-accent"><CatIcon name={cat.icon} /></span>
-                        <span className="text-base font-medium">{cat.name}</span>
+                        <span className="text-sm font-medium">{cat.name}</span>
                       </Link>
                       {cat.children?.map((sub: Cat) => (
                         <Link
@@ -567,7 +567,7 @@ export default function Header() {
                           className="flex items-center gap-2 pl-12 pr-4 py-2 rounded-lg hover:bg-surface transition-colors text-text-muted hover:text-accent"
                         >
                           <span className="w-1 h-1 rounded-full bg-accent/50 shrink-0" />
-                          <span className="text-[13px]">{sub.name}</span>
+                          <span className="text-xs">{sub.name}</span>
                         </Link>
                       ))}
                     </div>

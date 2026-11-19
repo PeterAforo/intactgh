@@ -45,7 +45,7 @@ export default function CookieConsent() {
               <Cookie className="w-6 h-6 text-accent shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-medium mb-1">We use cookies</p>
-                <p className="text-[13px] text-white/60 leading-relaxed">
+                <p className="text-xs text-white/60 leading-relaxed">
                   We use cookies and similar technologies to improve your browsing experience, analyze site traffic, and personalize content.
                   By clicking &quot;Accept&quot;, you consent to our use of cookies.{" "}
                   <Link href="/pages/privacy-policy" className="text-accent hover:underline">
