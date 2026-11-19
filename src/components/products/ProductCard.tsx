@@ -8,7 +8,6 @@ import { Heart, ShoppingCart, Eye, Star, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatPrice, getDiscountPercentage } from "@/lib/utils";
-import { imgUrl } from "@/lib/images";
 import { useCartStore, type CartProduct } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useCartPopupStore } from "@/store/cart-popup-store";
@@ -85,7 +84,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           <div className="relative aspect-square bg-surface overflow-hidden">
             {product.images?.[0]?.url ? (
               <Image
-                src={imgUrl(product.images[0].url, 800)}
+                src={product.images[0].url}
                 alt={product.name}
                 fill
                 className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -107,10 +106,10 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             </div>
 
             {/* Quick Actions */}
-            <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-100 sm:opacity-0 sm:translate-x-3 sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-[opacity,transform] duration-300">
+            <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-100 sm:opacity-0 sm:translate-x-3 sm:group-hover:opacity-100 sm:group-hover:translate-x-0 transition-all duration-300">
               <button
                 onClick={handleToggleWishlist}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-colors ${
                   isInWishlist
                     ? "bg-accent text-white"
                     : "bg-white text-text hover:bg-accent hover:text-white"
@@ -124,7 +123,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                   e.stopPropagation();
                   window.location.href = `/product/${product.slug}`;
                 }}
-                className="w-9 h-9 bg-white rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
+                className="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md hover:bg-primary hover:text-white transition-colors"
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -135,7 +134,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               <Button
                 onClick={handleAddToCart}
                 disabled={outOfStock}
-                className="w-full rounded-xl"
+                className="w-full rounded-xl shadow-lg"
                 size="sm"
               >
                 <ShoppingCart className="w-4 h-4 mr-2" />
@@ -148,7 +147,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           <div className="p-4">
             {/* Brand */}
             {product.brand && (
-              <p className="text-xs text-text-muted font-medium mb-1">
+              <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-1">
                 {product.brand.name}
               </p>
             )}

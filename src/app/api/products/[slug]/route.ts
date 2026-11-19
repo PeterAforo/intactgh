@@ -43,29 +43,5 @@ export async function GET(
     take: 4,
   });
 
-  // Real "frequently bought together": products that appear in the same
-  // orders as this one, ranked by co-occurrence count.
-  const coRows = await prisma.orderItem.groupBy({
-    by: ["productId"],
-    where: {
-      productId: { not: product.id },
-      order: { items: { some: { productId: product.id } } },
-    },
-    _count: { productId: true },
-    orderBy: { _count: { productId: "desc" } },
-    take: 4,
-  });
-
-  const frequentlyBought = coRows.length
-    ? await prisma.product.findMany({
-        where: { id: { in: coRows.map((r) => r.productId) }, status: "active" },
-        include: {
-          images: { orderBy: { order: "asc" }, take: 1 },
-          category: { select: { id: true, name: true, slug: true } },
-          brand: { select: { id: true, name: true, slug: true } },
-        },
-      })
-    : [];
-
-  return NextResponse.json({ product, relatedProducts, frequentlyBought });
+  return NextResponse.json({ product, relatedProducts });
 }

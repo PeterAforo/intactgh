@@ -4,7 +4,6 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star } from "lucide-react";
-import { imgUrl } from "@/lib/images";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -26,7 +25,7 @@ export default function ReviewSpotlight({ review }: ReviewSpotlightProps) {
   return (
     <section className="relative h-[80svh] w-full overflow-hidden md:h-[90svh]" aria-label="Customer review">
       <Image
-        src={imgUrl(review.image, 1600)}
+        src={review.image}
         alt={review.productName}
         fill
         sizes="100vw"

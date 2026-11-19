@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Reveal from "@/components/home/Reveal";
-import { imgUrl } from "@/lib/images";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -60,7 +59,7 @@ export default function ClosingCTA({ product }: ClosingCTAProps) {
         {image && (
           <div className="relative -mx-5 h-[52svh] overflow-hidden sm:-mx-8 lg:col-span-7 lg:mx-0 lg:h-auto lg:min-h-[90svh]">
             <Image
-              src={imgUrl(image, 1600)}
+              src={image}
               alt={product.name}
               fill
               sizes="(max-width: 1024px) 100vw, 58vw"

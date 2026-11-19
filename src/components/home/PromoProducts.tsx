@@ -8,7 +8,6 @@ import { Flame, Clock, Tag, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart-store";
 import { useCartPopupStore } from "@/store/cart-popup-store";
-import { imgUrl } from "@/lib/images";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Any = any;
@@ -124,7 +123,7 @@ export default function PromoProducts({ promos }: { promos: Any[] }) {
                       {/* Image */}
                       <div className="relative aspect-square bg-surface overflow-hidden">
                         {imageUrl ? (
-                          <Image src={imgUrl(imageUrl, 800)} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <Image src={imageUrl} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-text-muted">No image</div>
                         )}
